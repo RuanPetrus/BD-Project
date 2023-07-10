@@ -1,0 +1,28 @@
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Main</title>
+  <script src="main.js"></script>
+</head>
+
+<body>
+  <div id="myapp"></div>
+  <script>
+    const storedData = localStorage.getItem('__bdAppUser__');
+    const flags = storedData ? JSON.parse(storedData) : null;
+
+    // Load elm app
+    const app = Elm.Main.init({
+        node: document.getElementById("app-root"),
+        flags: flags,
+    });
+
+    // Subscribe for commands
+    app.ports.sendUserIdToStorage.subscribe(user_id => {
+        console.log('Got id', user_id);
+        localStorage.setItem('__bdAppUser__', user_id);
+    });
+
+  </script>
+</body>
+</html>

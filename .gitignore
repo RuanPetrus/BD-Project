@@ -1,0 +1,14 @@
+*venv
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+.tool-versions
+# elm-package generated files
+*elm-stuff
+# elm-repl generated files
+repl-temp-*
