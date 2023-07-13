@@ -2,7 +2,7 @@ DROP TRIGGER update_avaliacao_professor_on_inserting_avaliacao ON AvaliacoesProf
 
 DROP TABLE Departamentos, Professores, 
                     Disciplinas, Turmas, Users,
-                    Avaliacoes, Denuncias, AvaliacoesProfessores
+                    Avaliacoes, Denuncias, AvaliacoesProfessores, DenunciasProfessor
             CASCADE;
 
 DROP FUNCTION update_avaliacao_professor

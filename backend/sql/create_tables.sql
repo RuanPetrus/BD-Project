@@ -17,6 +17,7 @@ CREATE TABLE Professores (
     CONSTRAINT fk_departamento
       FOREIGN KEY(departamento_id) 
 	  REFERENCES Departamentos(id)
+      ON DELETE CASCADE
 );
 
 CREATE TABLE Disciplinas (
@@ -28,6 +29,7 @@ CREATE TABLE Disciplinas (
     CONSTRAINT fk_departamento
       FOREIGN KEY(departamento_id) 
 	  REFERENCES Departamentos(id)
+      ON DELETE CASCADE
 );
 
 CREATE TABLE Turmas (
@@ -39,10 +41,12 @@ CREATE TABLE Turmas (
     PRIMARY KEY(id),
     CONSTRAINT fk_professor
       FOREIGN KEY(professor_id) 
-	  REFERENCES Professores(id),
+	  REFERENCES Professores(id)
+      ON DELETE CASCADE,
     CONSTRAINT fk_disciplina
       FOREIGN KEY(disciplina_id) 
 	  REFERENCES Disciplinas(id)
+      ON DELETE CASCADE
  );
 
 CREATE TABLE Users (
@@ -67,10 +71,12 @@ CREATE TABLE Avaliacoes (
     PRIMARY KEY(id),
     CONSTRAINT fk_user
       FOREIGN KEY(user_id) 
-	  REFERENCES Users(id),
+	  REFERENCES Users(id)
+      ON DELETE CASCADE,
     CONSTRAINT fk_turma
       FOREIGN KEY(turma_id) 
 	  REFERENCES Turmas(id)
+      ON DELETE CASCADE
 );
 
 CREATE TABLE AvaliacoesProfessores (
@@ -83,10 +89,12 @@ CREATE TABLE AvaliacoesProfessores (
     PRIMARY KEY(id),
     CONSTRAINT fk_user
       FOREIGN KEY(user_id) 
-	  REFERENCES Users(id),
+	  REFERENCES Users(id)
+      ON DELETE CASCADE,
     CONSTRAINT fk_professor
       FOREIGN KEY(professor_id) 
 	  REFERENCES Professores(id)
+      ON DELETE CASCADE
 );
 
 
@@ -98,6 +106,18 @@ CREATE TABLE Denuncias (
     CONSTRAINT fk_avaliacao
       FOREIGN KEY(avaliacao_id) 
 	  REFERENCES Avaliacoes(id)
+      ON DELETE CASCADE
+);
+
+CREATE TABLE DenunciasProfessor (
+    id SERIAL,
+    avaliacao_id INT,
+
+    PRIMARY KEY(id),
+    CONSTRAINT fk_avaliacao
+      FOREIGN KEY(avaliacao_id) 
+	  REFERENCES AvaliacoesProfessores(id)
+      ON DELETE CASCADE
 );
 
 CREATE VIEW Turmas_Avaliacoes_View AS

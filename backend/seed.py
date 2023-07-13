@@ -112,6 +112,17 @@ def insert_denuncias(conn):
         """) 
     conn.commit()
 
+def insert_professor_denuncias(conn):
+    with conn.cursor() as curr:
+        curr.execute("""
+            INSERT INTO DenunciasProfessor(avaliacao_id)
+            VALUES
+                (1),
+                (2),
+                (3);
+        """) 
+    conn.commit()
+
 def main():
     dotenv.load_dotenv("./dev.env")
     host = os.getenv("HOST_DB")
