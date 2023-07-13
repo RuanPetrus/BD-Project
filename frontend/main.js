@@ -6499,7 +6499,8 @@ var $author$project$Page$Turma$init = function (_v0) {
 			newAvaliacao: {comentario: '', pontuacao: 0, userId: userId},
 			state: $author$project$Page$Turma$Loading,
 			turma: $author$project$Page$Turma$emptyTurma,
-			turmaId: turmaId
+			turmaId: turmaId,
+			userId: userId
 		},
 		$author$project$Page$Turma$getTurma(turmaId));
 };
@@ -8040,6 +8041,25 @@ var $author$project$Page$Turma$newAvaliacaoCmd = function (model) {
 			url: $author$project$Page$Turma$newAvaliacaoUrl(model.turmaId)
 		});
 };
+var $author$project$Page$Turma$WebRemoveAvaliacaoData = function (a) {
+	return {$: 'WebRemoveAvaliacaoData', a: a};
+};
+var $author$project$Page$Turma$removeAvaliacaoDecoder = A2($elm$json$Json$Decode$field, 'message', $elm$json$Json$Decode$string);
+var $author$project$Page$Turma$removeAvaliacaoUrl = function (id) {
+	return 'http://127.0.0.1:5000/api/avaliacao/' + $elm$core$String$fromInt(id);
+};
+var $author$project$Page$Turma$removeAvaliacaoCmd = function (avaliacaoId) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$emptyBody,
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Turma$WebRemoveAvaliacaoData, $author$project$Page$Turma$removeAvaliacaoDecoder),
+			headers: _List_Nil,
+			method: 'DELETE',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Turma$removeAvaliacaoUrl(avaliacaoId)
+		});
+};
 var $author$project$Page$Turma$updateComentario = F2(
 	function (avaliacao, value) {
 		return _Utils_update(
@@ -8127,6 +8147,28 @@ var $author$project$Page$Turma$update = F2(
 							}),
 						$elm$core$Platform$Cmd$none);
 				}
+			case 'WebRemoveAvaliacaoData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var message = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(message)
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(
+									$author$project$ErrorMsg$buildErrorMsg(httpError))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
 			case 'SetComentario':
 				var comentario = msg.a;
 				return _Utils_Tuple2(
@@ -8149,11 +8191,16 @@ var $author$project$Page$Turma$update = F2(
 				return _Utils_Tuple2(
 					model,
 					$author$project$Page$Turma$newAvaliacaoCmd(model));
-			default:
+			case 'Denuncia':
 				var avaliacaoId = msg.a;
 				return _Utils_Tuple2(
 					model,
 					$author$project$Page$Turma$denunciaCmd(avaliacaoId));
+			default:
+				var avaliacaoId = msg.a;
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$Turma$removeAvaliacaoCmd(avaliacaoId));
 		}
 	});
 var $author$project$Main$update = F2(
@@ -10032,48 +10079,63 @@ var $author$project$Page$Turma$viewAddAvaliacao = function (avaliacao) {
 var $author$project$Page$Turma$Denuncia = function (a) {
 	return {$: 'Denuncia', a: a};
 };
-var $author$project$Page$Turma$viewAvaliacao = function (avaliacao) {
-	return A2(
-		$elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2($elm$html$Html$hr, _List_Nil, _List_Nil),
-				A2(
-				$elm$html$Html$p,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Username: ' + avaliacao.userNome)
-					])),
-				A2(
-				$elm$html$Html$p,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Comentario: ' + avaliacao.comentario)
-					])),
-				A2(
-				$elm$html$Html$p,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text(
-						'Pontuacao: ' + $elm$core$String$fromInt(avaliacao.pontuacao))
-					])),
-				A2(
-				$elm$html$Html$button,
-				_List_fromArray(
-					[
-						$elm$html$Html$Events$onClick(
-						$author$project$Page$Turma$Denuncia(avaliacao.id))
-					]),
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Denuncia')
-					]))
-			]));
+var $author$project$Page$Turma$RemoverAvaliacao = function (a) {
+	return {$: 'RemoverAvaliacao', a: a};
 };
+var $author$project$Page$Turma$viewAvaliacao = F2(
+	function (myId, avaliacao) {
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2($elm$html$Html$hr, _List_Nil, _List_Nil),
+					A2(
+					$elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Username: ' + avaliacao.userNome)
+						])),
+					A2(
+					$elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Comentario: ' + avaliacao.comentario)
+						])),
+					A2(
+					$elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(
+							'Pontuacao: ' + $elm$core$String$fromInt(avaliacao.pontuacao))
+						])),
+					A2(
+					$elm$html$Html$button,
+					_List_fromArray(
+						[
+							$elm$html$Html$Events$onClick(
+							$author$project$Page$Turma$Denuncia(avaliacao.id))
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Denuncia')
+						])),
+					_Utils_eq(avaliacao.userId, myId) ? A2(
+					$elm$html$Html$button,
+					_List_fromArray(
+						[
+							$elm$html$Html$Events$onClick(
+							$author$project$Page$Turma$RemoverAvaliacao(avaliacao.id))
+						]),
+					_List_fromArray(
+						[
+							$elm$html$Html$text('Apagar')
+						])) : A2($elm$html$Html$div, _List_Nil, _List_Nil)
+				]));
+	});
 var $author$project$Page$Turma$viewTurma = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -10119,7 +10181,10 @@ var $author$project$Page$Turma$viewTurma = function (model) {
 				A2(
 				$elm$html$Html$ul,
 				_List_Nil,
-				A2($elm$core$List$map, $author$project$Page$Turma$viewAvaliacao, model.turma.avaliacoes)),
+				A2(
+					$elm$core$List$map,
+					$author$project$Page$Turma$viewAvaliacao(model.userId),
+					model.turma.avaliacoes)),
 				$author$project$Page$Turma$viewAddAvaliacao(model.newAvaliacao)
 			]));
 };

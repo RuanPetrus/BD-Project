@@ -14,7 +14,9 @@ type Msg
     = WebTurmaData ( Result Http.Error ( Turma ) )
     | WebNewAvaliacaoData ( Result Http.Error ( Avaliacao ) )
     | WebDenunciaData ( Result Http.Error ( String ) )
+    | WebRemoveAvaliacaoData ( Result Http.Error ( String ) )
     | Denuncia Int
+    | RemoverAvaliacao Int
     | SetComentario String
     | SetPontuacao String
     | ClickNewComentario
@@ -26,6 +28,7 @@ type State
 type alias Model =
     { turma : Turma
     , turmaId : Int
+    , userId : Int
     , errorMsg : Maybe String
     , state : State
     , newAvaliacao : NewAvaliacao
@@ -87,7 +90,7 @@ viewTurma model =
         , h3 [] [ text ("Turma: " ++ model.turma.numero) ]
         , h3 [] [ text ("Nota: " ++ String.fromInt(model.turma.sumAvaliacoes // model.turma.qtdAvaliacoes)) ]
         , p [] [ text "Comentarios:" ]
-        , ul [] (List.map viewAvaliacao model.turma.avaliacoes)
+        , ul [] (List.map (viewAvaliacao model.userId) model.turma.avaliacoes )
         , viewAddAvaliacao model.newAvaliacao
         ]
 
@@ -117,14 +120,17 @@ viewAddAvaliacao avaliacao =
             ]
         ]
 
-viewAvaliacao : Avaliacao -> Html Msg
-viewAvaliacao avaliacao =
+viewAvaliacao : Int -> Avaliacao -> Html Msg
+viewAvaliacao myId avaliacao =
     div []
         [ hr [] []
         , p [] [ text ("Username: " ++ avaliacao.userNome) ]
         , p [] [ text ("Comentario: " ++ avaliacao.comentario) ]
         , p [] [ text ("Pontuacao: " ++ String.fromInt(avaliacao.pontuacao)) ]
         , button [ onClick (Denuncia avaliacao.id) ] [ text "Denuncia" ]
+        , if (avaliacao.userId == myId) then
+            button [ onClick (RemoverAvaliacao avaliacao.id) ] [ text "Apagar" ]
+          else div [] []
         ]
 
 viewError : Model -> Html Msg
@@ -183,6 +189,14 @@ update msg model =
                 Err httpError ->
                     ( { model | errorMsg = Just (buildErrorMsg httpError) }, Cmd.none )
 
+        WebRemoveAvaliacaoData result ->
+            case result of 
+                Ok message ->
+                    ( { model | errorMsg = Just (message) }, Cmd.none )
+                    
+                Err httpError ->
+                    ( { model | errorMsg = Just (buildErrorMsg httpError) }, Cmd.none )
+
         ( SetComentario comentario ) ->
             ( { model | newAvaliacao = updateComentario model.newAvaliacao comentario }, Cmd.none )
         ( SetPontuacao pontuacao ) ->
@@ -195,11 +209,14 @@ update msg model =
         ( Denuncia avaliacaoId) ->
             (model, denunciaCmd avaliacaoId)
 
+        ( RemoverAvaliacao avaliacaoId) ->
+           ( model, removeAvaliacaoCmd avaliacaoId )
 
 init : (Int, Int) -> ( Model, Cmd Msg )
 init (userId, turmaId) =
     ( { turma = emptyTurma
       , turmaId = turmaId
+      , userId = userId
       , errorMsg = Nothing
       , state = Loading
       , newAvaliacao = { userId = userId, comentario = "", pontuacao = 0 }
@@ -288,3 +305,24 @@ denunciaEncoder avaliacaoId =
     Encode.object
         [ ("avaliacao_id",  Encode.int avaliacaoId)
         ]
+
+removeAvaliacaoUrl : Int -> String
+removeAvaliacaoUrl id =
+    "http://127.0.0.1:5000/api/avaliacao/" ++ String.fromInt(id)
+                     
+
+removeAvaliacaoCmd : Int -> Cmd Msg
+removeAvaliacaoCmd avaliacaoId =
+    Http.request
+        { method = "DELETE"
+        , url = removeAvaliacaoUrl avaliacaoId
+        , body = Http.emptyBody
+        , expect = Http.expectJson WebRemoveAvaliacaoData removeAvaliacaoDecoder
+        , headers = []
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+removeAvaliacaoDecoder: Decoder String
+removeAvaliacaoDecoder =
+    (Decode.field "message" Decode.string)

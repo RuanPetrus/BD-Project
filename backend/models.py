@@ -414,7 +414,7 @@ async def register_user(
         if res is None:
             return None
 
-        return UserId(user_id=res[0], is_admin=res[1])
+        return UserId(user_id=res[0], is_admin=False)
 
 async def delete_user(
         conn: psycopg.AsyncConnection,

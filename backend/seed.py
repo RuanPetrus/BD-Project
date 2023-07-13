@@ -68,7 +68,7 @@ def insert_users(conn):
             VALUES
                 ('admin@email.com', 'Admin Admin', '000000000', 'CIC', 'admin', true),
                 ('ruan@email.com', 'Ruan Petrus',  '211010459', 'CIC', '123', false),
-                ('brines@email.com', 'Paulo Brines', '211010459', 'CIC', '123', false);
+                ('brines@email.com', 'Paulo Brines', '211020954', 'CIC', '123', false);
         """) 
 
 def insert_avaliacoes(conn):
@@ -162,6 +162,7 @@ def main():
         insert_avaliacoes(conn)
         insert_professor_avaliacoes(conn)
         insert_denuncias(conn)
+        insert_professor_denuncias(conn)
 
 
 if __name__ == "__main__":
