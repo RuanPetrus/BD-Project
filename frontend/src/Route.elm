@@ -7,10 +7,14 @@ import Url.Parser exposing (..)
 type Route
     = NotFound
     | Disciplinas
+    | Professores
+    | Denuncias
     | Home
     | Login
     | Perfil
     | Turma Int
+    | Disciplina Int
+    | Professor Int
 
 
 parseUrl : Url -> Route
@@ -33,4 +37,8 @@ matchRoute =
         , map Login (s "register")
         , map Perfil (s "perfil")
         , map Turma (s "turma" </> int)
+        , map Disciplina (s "disciplina" </> int)
+        , map Professor (s "professor" </> int)
+        , map Professores (s "professores")
+        , map Denuncias (s "denuncias")
         ]

@@ -18,9 +18,12 @@
     });
 
     // Subscribe for commands
-    app.ports.sendUserIdToStorage.subscribe(user_id => {
-        console.log('Got id', user_id);
-        localStorage.setItem('__bdAppUser__', user_id);
+    app.ports.sendUserIdToStorage.subscribe(data => {
+        localStorage.setItem('__bdAppUser__', JSON.stringify(data));
+    });
+
+    app.ports.removeUserIdFromStorage.subscribe(user_id => {
+        localStorage.removeItem('__bdAppUser__');
     });
 
   </script>

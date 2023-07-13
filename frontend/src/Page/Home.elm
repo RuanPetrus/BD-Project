@@ -1,16 +1,16 @@
-module Page.Home exposing (Model, Msg, view, init, update)
+module Page.Home exposing (Model,  Msg, view, init, update)
 
 import Browser
-import Html exposing (Html, a, div, text, h3, p)
+import Html exposing (Html, a, div, text, h3, p, button)
 import Html.Attributes exposing (href)
+import Html.Events exposing (onClick)
 import Http
 
 type Msg
     = HomeMsg
 
 type alias Model =
-    {
-       userId: Int
+    { isAdmin: Bool
     }
 
 
@@ -18,9 +18,17 @@ disciplinasPath : String
 disciplinasPath
     = "/disciplinas/"
 
+professoresPath : String
+professoresPath
+    = "/professores/"
+
 perfilPath : String
 perfilPath
     = "/perfil/"
+
+denunciasPath : String
+denunciasPath
+    = "/denuncias/"
 
 view : Model -> Html Msg
 view model =
@@ -29,9 +37,20 @@ view model =
 
         , div []
               [ p [] [ a [ href disciplinasPath ] [ text "Disciplinas" ] ]
+              , p [] [ a [ href professoresPath ] [ text "Professores" ] ]
               , p [] [ a [ href perfilPath ] [ text "User" ] ]
+              , viewDenuncias model
               ]
+                
         ]
+
+viewDenuncias : Model -> Html Msg
+viewDenuncias model =
+    if model.isAdmin then
+            p [] [ a [ href denunciasPath ] [ text "Denuncias" ] ]
+    else
+        div [] []
+    
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -41,9 +60,9 @@ update msg model =
             ( model, Cmd.none )
                     
 
-init : ( Model, Cmd Msg )
-init =
-    ( { userId = 0
+init : Bool -> ( Model, Cmd Msg )
+init isAdmin =
+    ( { isAdmin = isAdmin
       }
     , Cmd.none
     )

@@ -21,8 +21,8 @@ type Msg
     | RegisterSetPassword String
     | ClickLogin
     | ClickRegister
-    | WebRegisterData ( Result Http.Error ( (Int, Bool) ) )
-    | WebLoginData ( Result Http.Error ( (Int, Bool) ) )
+    | WebRegisterData ( Result Http.Error ( Int ) )
+    | WebLoginData ( Result Http.Error ( Int ) )
 
 
 type alias LoginUser =
@@ -41,7 +41,7 @@ type alias RegisterUser =
 type alias Model =
     { loginErrorMsg: Maybe String
     , registerErrorMsg: Maybe String
-    , user: Maybe (Int, Bool)
+    , user: Maybe Int
     , loginUser: LoginUser
     , registerUser: RegisterUser
     }
@@ -138,7 +138,8 @@ viewError errorMessage =
             div [] []
         Just msg ->
             div []
-                [ h4 [] [ text ("Error: " ++ msg) ]
+                [ h3 [] [ text "Fail to login" ]
+                , text ("Error: " ++ msg)
                 ]
 
 
@@ -192,11 +193,9 @@ userRegisterEncoder user =
         , ("password", Encode.string user.password)
         ]
 
-userIdDecoder : Decoder (Int, Bool)
+userIdDecoder : Decoder Int
 userIdDecoder =
-    Decode.map2 Tuple.pair
-    (Decode.field "user_id" Decode.int)
-    (Decode.field "is_admin" Decode.bool)
+    Decode.field "user_id" Decode.int
 
 
 loginUpdateEmail : LoginUser -> String -> LoginUser

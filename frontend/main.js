@@ -80,271 +80,6 @@ function A9(fun, a, b, c, d, e, f, g, h, i) {
 console.warn('Compiled in DEV mode. Follow the advice at https://elm-lang.org/0.19.1/optimize for better performance and smaller assets.');
 
 
-// EQUALITY
-
-function _Utils_eq(x, y)
-{
-	for (
-		var pair, stack = [], isEqual = _Utils_eqHelp(x, y, 0, stack);
-		isEqual && (pair = stack.pop());
-		isEqual = _Utils_eqHelp(pair.a, pair.b, 0, stack)
-		)
-	{}
-
-	return isEqual;
-}
-
-function _Utils_eqHelp(x, y, depth, stack)
-{
-	if (x === y)
-	{
-		return true;
-	}
-
-	if (typeof x !== 'object' || x === null || y === null)
-	{
-		typeof x === 'function' && _Debug_crash(5);
-		return false;
-	}
-
-	if (depth > 100)
-	{
-		stack.push(_Utils_Tuple2(x,y));
-		return true;
-	}
-
-	/**/
-	if (x.$ === 'Set_elm_builtin')
-	{
-		x = $elm$core$Set$toList(x);
-		y = $elm$core$Set$toList(y);
-	}
-	if (x.$ === 'RBNode_elm_builtin' || x.$ === 'RBEmpty_elm_builtin')
-	{
-		x = $elm$core$Dict$toList(x);
-		y = $elm$core$Dict$toList(y);
-	}
-	//*/
-
-	/**_UNUSED/
-	if (x.$ < 0)
-	{
-		x = $elm$core$Dict$toList(x);
-		y = $elm$core$Dict$toList(y);
-	}
-	//*/
-
-	for (var key in x)
-	{
-		if (!_Utils_eqHelp(x[key], y[key], depth + 1, stack))
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-var _Utils_equal = F2(_Utils_eq);
-var _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
-
-
-
-// COMPARISONS
-
-// Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
-// the particular integer values assigned to LT, EQ, and GT.
-
-function _Utils_cmp(x, y, ord)
-{
-	if (typeof x !== 'object')
-	{
-		return x === y ? /*EQ*/ 0 : x < y ? /*LT*/ -1 : /*GT*/ 1;
-	}
-
-	/**/
-	if (x instanceof String)
-	{
-		var a = x.valueOf();
-		var b = y.valueOf();
-		return a === b ? 0 : a < b ? -1 : 1;
-	}
-	//*/
-
-	/**_UNUSED/
-	if (typeof x.$ === 'undefined')
-	//*/
-	/**/
-	if (x.$[0] === '#')
-	//*/
-	{
-		return (ord = _Utils_cmp(x.a, y.a))
-			? ord
-			: (ord = _Utils_cmp(x.b, y.b))
-				? ord
-				: _Utils_cmp(x.c, y.c);
-	}
-
-	// traverse conses until end of a list or a mismatch
-	for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); x = x.b, y = y.b) {} // WHILE_CONSES
-	return ord || (x.b ? /*GT*/ 1 : y.b ? /*LT*/ -1 : /*EQ*/ 0);
-}
-
-var _Utils_lt = F2(function(a, b) { return _Utils_cmp(a, b) < 0; });
-var _Utils_le = F2(function(a, b) { return _Utils_cmp(a, b) < 1; });
-var _Utils_gt = F2(function(a, b) { return _Utils_cmp(a, b) > 0; });
-var _Utils_ge = F2(function(a, b) { return _Utils_cmp(a, b) >= 0; });
-
-var _Utils_compare = F2(function(x, y)
-{
-	var n = _Utils_cmp(x, y);
-	return n < 0 ? $elm$core$Basics$LT : n ? $elm$core$Basics$GT : $elm$core$Basics$EQ;
-});
-
-
-// COMMON VALUES
-
-var _Utils_Tuple0_UNUSED = 0;
-var _Utils_Tuple0 = { $: '#0' };
-
-function _Utils_Tuple2_UNUSED(a, b) { return { a: a, b: b }; }
-function _Utils_Tuple2(a, b) { return { $: '#2', a: a, b: b }; }
-
-function _Utils_Tuple3_UNUSED(a, b, c) { return { a: a, b: b, c: c }; }
-function _Utils_Tuple3(a, b, c) { return { $: '#3', a: a, b: b, c: c }; }
-
-function _Utils_chr_UNUSED(c) { return c; }
-function _Utils_chr(c) { return new String(c); }
-
-
-// RECORDS
-
-function _Utils_update(oldRecord, updatedFields)
-{
-	var newRecord = {};
-
-	for (var key in oldRecord)
-	{
-		newRecord[key] = oldRecord[key];
-	}
-
-	for (var key in updatedFields)
-	{
-		newRecord[key] = updatedFields[key];
-	}
-
-	return newRecord;
-}
-
-
-// APPEND
-
-var _Utils_append = F2(_Utils_ap);
-
-function _Utils_ap(xs, ys)
-{
-	// append Strings
-	if (typeof xs === 'string')
-	{
-		return xs + ys;
-	}
-
-	// append Lists
-	if (!xs.b)
-	{
-		return ys;
-	}
-	var root = _List_Cons(xs.a, ys);
-	xs = xs.b
-	for (var curr = root; xs.b; xs = xs.b) // WHILE_CONS
-	{
-		curr = curr.b = _List_Cons(xs.a, ys);
-	}
-	return root;
-}
-
-
-
-var _List_Nil_UNUSED = { $: 0 };
-var _List_Nil = { $: '[]' };
-
-function _List_Cons_UNUSED(hd, tl) { return { $: 1, a: hd, b: tl }; }
-function _List_Cons(hd, tl) { return { $: '::', a: hd, b: tl }; }
-
-
-var _List_cons = F2(_List_Cons);
-
-function _List_fromArray(arr)
-{
-	var out = _List_Nil;
-	for (var i = arr.length; i--; )
-	{
-		out = _List_Cons(arr[i], out);
-	}
-	return out;
-}
-
-function _List_toArray(xs)
-{
-	for (var out = []; xs.b; xs = xs.b) // WHILE_CONS
-	{
-		out.push(xs.a);
-	}
-	return out;
-}
-
-var _List_map2 = F3(function(f, xs, ys)
-{
-	for (var arr = []; xs.b && ys.b; xs = xs.b, ys = ys.b) // WHILE_CONSES
-	{
-		arr.push(A2(f, xs.a, ys.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map3 = F4(function(f, xs, ys, zs)
-{
-	for (var arr = []; xs.b && ys.b && zs.b; xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A3(f, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map4 = F5(function(f, ws, xs, ys, zs)
-{
-	for (var arr = []; ws.b && xs.b && ys.b && zs.b; ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A4(f, ws.a, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_map5 = F6(function(f, vs, ws, xs, ys, zs)
-{
-	for (var arr = []; vs.b && ws.b && xs.b && ys.b && zs.b; vs = vs.b, ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
-	{
-		arr.push(A5(f, vs.a, ws.a, xs.a, ys.a, zs.a));
-	}
-	return _List_fromArray(arr);
-});
-
-var _List_sortBy = F2(function(f, xs)
-{
-	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
-		return _Utils_cmp(f(a), f(b));
-	}));
-});
-
-var _List_sortWith = F2(function(f, xs)
-{
-	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
-		var ord = A2(f, a, b);
-		return ord === $elm$core$Basics$EQ ? 0 : ord === $elm$core$Basics$LT ? -1 : 1;
-	}));
-});
-
-
-
 var _JsArray_empty = [];
 
 function _JsArray_singleton(value)
@@ -790,6 +525,271 @@ function _Debug_regionToString(region)
 	}
 	return 'on lines ' + region.start.line + ' through ' + region.end.line;
 }
+
+
+
+// EQUALITY
+
+function _Utils_eq(x, y)
+{
+	for (
+		var pair, stack = [], isEqual = _Utils_eqHelp(x, y, 0, stack);
+		isEqual && (pair = stack.pop());
+		isEqual = _Utils_eqHelp(pair.a, pair.b, 0, stack)
+		)
+	{}
+
+	return isEqual;
+}
+
+function _Utils_eqHelp(x, y, depth, stack)
+{
+	if (x === y)
+	{
+		return true;
+	}
+
+	if (typeof x !== 'object' || x === null || y === null)
+	{
+		typeof x === 'function' && _Debug_crash(5);
+		return false;
+	}
+
+	if (depth > 100)
+	{
+		stack.push(_Utils_Tuple2(x,y));
+		return true;
+	}
+
+	/**/
+	if (x.$ === 'Set_elm_builtin')
+	{
+		x = $elm$core$Set$toList(x);
+		y = $elm$core$Set$toList(y);
+	}
+	if (x.$ === 'RBNode_elm_builtin' || x.$ === 'RBEmpty_elm_builtin')
+	{
+		x = $elm$core$Dict$toList(x);
+		y = $elm$core$Dict$toList(y);
+	}
+	//*/
+
+	/**_UNUSED/
+	if (x.$ < 0)
+	{
+		x = $elm$core$Dict$toList(x);
+		y = $elm$core$Dict$toList(y);
+	}
+	//*/
+
+	for (var key in x)
+	{
+		if (!_Utils_eqHelp(x[key], y[key], depth + 1, stack))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+var _Utils_equal = F2(_Utils_eq);
+var _Utils_notEqual = F2(function(a, b) { return !_Utils_eq(a,b); });
+
+
+
+// COMPARISONS
+
+// Code in Generate/JavaScript.hs, Basics.js, and List.js depends on
+// the particular integer values assigned to LT, EQ, and GT.
+
+function _Utils_cmp(x, y, ord)
+{
+	if (typeof x !== 'object')
+	{
+		return x === y ? /*EQ*/ 0 : x < y ? /*LT*/ -1 : /*GT*/ 1;
+	}
+
+	/**/
+	if (x instanceof String)
+	{
+		var a = x.valueOf();
+		var b = y.valueOf();
+		return a === b ? 0 : a < b ? -1 : 1;
+	}
+	//*/
+
+	/**_UNUSED/
+	if (typeof x.$ === 'undefined')
+	//*/
+	/**/
+	if (x.$[0] === '#')
+	//*/
+	{
+		return (ord = _Utils_cmp(x.a, y.a))
+			? ord
+			: (ord = _Utils_cmp(x.b, y.b))
+				? ord
+				: _Utils_cmp(x.c, y.c);
+	}
+
+	// traverse conses until end of a list or a mismatch
+	for (; x.b && y.b && !(ord = _Utils_cmp(x.a, y.a)); x = x.b, y = y.b) {} // WHILE_CONSES
+	return ord || (x.b ? /*GT*/ 1 : y.b ? /*LT*/ -1 : /*EQ*/ 0);
+}
+
+var _Utils_lt = F2(function(a, b) { return _Utils_cmp(a, b) < 0; });
+var _Utils_le = F2(function(a, b) { return _Utils_cmp(a, b) < 1; });
+var _Utils_gt = F2(function(a, b) { return _Utils_cmp(a, b) > 0; });
+var _Utils_ge = F2(function(a, b) { return _Utils_cmp(a, b) >= 0; });
+
+var _Utils_compare = F2(function(x, y)
+{
+	var n = _Utils_cmp(x, y);
+	return n < 0 ? $elm$core$Basics$LT : n ? $elm$core$Basics$GT : $elm$core$Basics$EQ;
+});
+
+
+// COMMON VALUES
+
+var _Utils_Tuple0_UNUSED = 0;
+var _Utils_Tuple0 = { $: '#0' };
+
+function _Utils_Tuple2_UNUSED(a, b) { return { a: a, b: b }; }
+function _Utils_Tuple2(a, b) { return { $: '#2', a: a, b: b }; }
+
+function _Utils_Tuple3_UNUSED(a, b, c) { return { a: a, b: b, c: c }; }
+function _Utils_Tuple3(a, b, c) { return { $: '#3', a: a, b: b, c: c }; }
+
+function _Utils_chr_UNUSED(c) { return c; }
+function _Utils_chr(c) { return new String(c); }
+
+
+// RECORDS
+
+function _Utils_update(oldRecord, updatedFields)
+{
+	var newRecord = {};
+
+	for (var key in oldRecord)
+	{
+		newRecord[key] = oldRecord[key];
+	}
+
+	for (var key in updatedFields)
+	{
+		newRecord[key] = updatedFields[key];
+	}
+
+	return newRecord;
+}
+
+
+// APPEND
+
+var _Utils_append = F2(_Utils_ap);
+
+function _Utils_ap(xs, ys)
+{
+	// append Strings
+	if (typeof xs === 'string')
+	{
+		return xs + ys;
+	}
+
+	// append Lists
+	if (!xs.b)
+	{
+		return ys;
+	}
+	var root = _List_Cons(xs.a, ys);
+	xs = xs.b
+	for (var curr = root; xs.b; xs = xs.b) // WHILE_CONS
+	{
+		curr = curr.b = _List_Cons(xs.a, ys);
+	}
+	return root;
+}
+
+
+
+var _List_Nil_UNUSED = { $: 0 };
+var _List_Nil = { $: '[]' };
+
+function _List_Cons_UNUSED(hd, tl) { return { $: 1, a: hd, b: tl }; }
+function _List_Cons(hd, tl) { return { $: '::', a: hd, b: tl }; }
+
+
+var _List_cons = F2(_List_Cons);
+
+function _List_fromArray(arr)
+{
+	var out = _List_Nil;
+	for (var i = arr.length; i--; )
+	{
+		out = _List_Cons(arr[i], out);
+	}
+	return out;
+}
+
+function _List_toArray(xs)
+{
+	for (var out = []; xs.b; xs = xs.b) // WHILE_CONS
+	{
+		out.push(xs.a);
+	}
+	return out;
+}
+
+var _List_map2 = F3(function(f, xs, ys)
+{
+	for (var arr = []; xs.b && ys.b; xs = xs.b, ys = ys.b) // WHILE_CONSES
+	{
+		arr.push(A2(f, xs.a, ys.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map3 = F4(function(f, xs, ys, zs)
+{
+	for (var arr = []; xs.b && ys.b && zs.b; xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A3(f, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map4 = F5(function(f, ws, xs, ys, zs)
+{
+	for (var arr = []; ws.b && xs.b && ys.b && zs.b; ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A4(f, ws.a, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_map5 = F6(function(f, vs, ws, xs, ys, zs)
+{
+	for (var arr = []; vs.b && ws.b && xs.b && ys.b && zs.b; vs = vs.b, ws = ws.b, xs = xs.b, ys = ys.b, zs = zs.b) // WHILE_CONSES
+	{
+		arr.push(A5(f, vs.a, ws.a, xs.a, ys.a, zs.a));
+	}
+	return _List_fromArray(arr);
+});
+
+var _List_sortBy = F2(function(f, xs)
+{
+	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
+		return _Utils_cmp(f(a), f(b));
+	}));
+});
+
+var _List_sortWith = F2(function(f, xs)
+{
+	return _List_fromArray(_List_toArray(xs).sort(function(a, b) {
+		var ord = A2(f, a, b);
+		return ord === $elm$core$Basics$EQ ? 0 : ord === $elm$core$Basics$LT ? -1 : 1;
+	}));
+});
 
 
 
@@ -4572,10 +4572,31 @@ var $elm$core$Maybe$Nothing = {$: 'Nothing'};
 var $author$project$Main$UrlChanged = function (a) {
 	return {$: 'UrlChanged', a: a};
 };
-var $elm$core$Basics$EQ = {$: 'EQ'};
-var $elm$core$Basics$GT = {$: 'GT'};
-var $elm$core$Basics$LT = {$: 'LT'};
 var $elm$core$List$cons = _List_cons;
+var $elm$core$Elm$JsArray$foldr = _JsArray_foldr;
+var $elm$core$Array$foldr = F3(
+	function (func, baseCase, _v0) {
+		var tree = _v0.c;
+		var tail = _v0.d;
+		var helper = F2(
+			function (node, acc) {
+				if (node.$ === 'SubTree') {
+					var subTree = node.a;
+					return A3($elm$core$Elm$JsArray$foldr, helper, acc, subTree);
+				} else {
+					var values = node.a;
+					return A3($elm$core$Elm$JsArray$foldr, func, acc, values);
+				}
+			});
+		return A3(
+			$elm$core$Elm$JsArray$foldr,
+			helper,
+			A3($elm$core$Elm$JsArray$foldr, func, baseCase, tail),
+			tree);
+	});
+var $elm$core$Array$toList = function (array) {
+	return A3($elm$core$Array$foldr, $elm$core$List$cons, _List_Nil, array);
+};
 var $elm$core$Dict$foldr = F3(
 	function (func, acc, t) {
 		foldr:
@@ -4628,30 +4649,9 @@ var $elm$core$Set$toList = function (_v0) {
 	var dict = _v0.a;
 	return $elm$core$Dict$keys(dict);
 };
-var $elm$core$Elm$JsArray$foldr = _JsArray_foldr;
-var $elm$core$Array$foldr = F3(
-	function (func, baseCase, _v0) {
-		var tree = _v0.c;
-		var tail = _v0.d;
-		var helper = F2(
-			function (node, acc) {
-				if (node.$ === 'SubTree') {
-					var subTree = node.a;
-					return A3($elm$core$Elm$JsArray$foldr, helper, acc, subTree);
-				} else {
-					var values = node.a;
-					return A3($elm$core$Elm$JsArray$foldr, func, acc, values);
-				}
-			});
-		return A3(
-			$elm$core$Elm$JsArray$foldr,
-			helper,
-			A3($elm$core$Elm$JsArray$foldr, func, baseCase, tail),
-			tree);
-	});
-var $elm$core$Array$toList = function (array) {
-	return A3($elm$core$Array$foldr, $elm$core$List$cons, _List_Nil, array);
-};
+var $elm$core$Basics$EQ = {$: 'EQ'};
+var $elm$core$Basics$GT = {$: 'GT'};
+var $elm$core$Basics$LT = {$: 'LT'};
 var $elm$core$Result$Err = function (a) {
 	return {$: 'Err', a: a};
 };
@@ -5043,6 +5043,7 @@ var $elm$core$Result$isOk = function (result) {
 		return false;
 	}
 };
+var $elm$json$Json$Decode$andThen = _Json_andThen;
 var $elm$json$Json$Decode$map = _Json_map1;
 var $elm$json$Json$Decode$map2 = _Json_map2;
 var $elm$json$Json$Decode$succeed = _Json_succeed;
@@ -5357,7 +5358,21 @@ var $elm$core$Task$perform = F2(
 				A2($elm$core$Task$map, toMessage, task)));
 	});
 var $elm$browser$Browser$application = _Browser_application;
+var $elm$json$Json$Decode$bool = _Json_decodeBool;
+var $elm$json$Json$Decode$index = _Json_decodeIndex;
 var $author$project$Main$NotFoundPage = {$: 'NotFoundPage'};
+var $author$project$Main$Denuncias = function (a) {
+	return {$: 'Denuncias', a: a};
+};
+var $author$project$Main$DenunciasMsg = function (a) {
+	return {$: 'DenunciasMsg', a: a};
+};
+var $author$project$Main$Disciplina = function (a) {
+	return {$: 'Disciplina', a: a};
+};
+var $author$project$Main$DisciplinaMsg = function (a) {
+	return {$: 'DisciplinaMsg', a: a};
+};
 var $author$project$Main$Disciplinas = function (a) {
 	return {$: 'Disciplinas', a: a};
 };
@@ -5383,29 +5398,44 @@ var $author$project$Main$Perfil = function (a) {
 var $author$project$Main$PerfilMsg = function (a) {
 	return {$: 'PerfilMsg', a: a};
 };
+var $author$project$Main$Professor = function (a) {
+	return {$: 'Professor', a: a};
+};
+var $author$project$Main$ProfessorMsg = function (a) {
+	return {$: 'ProfessorMsg', a: a};
+};
+var $author$project$Main$Professores = function (a) {
+	return {$: 'Professores', a: a};
+};
+var $author$project$Main$ProfessoresMsg = function (a) {
+	return {$: 'ProfessoresMsg', a: a};
+};
+var $author$project$Main$Turma = function (a) {
+	return {$: 'Turma', a: a};
+};
+var $author$project$Main$TurmaMsg = function (a) {
+	return {$: 'TurmaMsg', a: a};
+};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
-var $author$project$Page$Home$init = _Utils_Tuple2(
-	{userId: 0},
-	$elm$core$Platform$Cmd$none);
-var $author$project$Page$ListDisciplinas$WebData = function (a) {
+var $author$project$Page$Denuncias$Loading = {$: 'Loading'};
+var $author$project$Page$Denuncias$WebData = function (a) {
 	return {$: 'WebData', a: a};
 };
-var $author$project$Page$ListDisciplinas$DisciplinaItem = F2(
-	function (id, nome) {
-		return {id: id, nome: nome};
+var $author$project$Page$Denuncias$Denuncia = F3(
+	function (id, comentario, avaliacaoId) {
+		return {avaliacaoId: avaliacaoId, comentario: comentario, id: id};
 	});
 var $elm$json$Json$Decode$field = _Json_decodeField;
 var $elm$json$Json$Decode$int = _Json_decodeInt;
+var $elm$json$Json$Decode$map3 = _Json_map3;
 var $elm$json$Json$Decode$string = _Json_decodeString;
-var $author$project$Page$ListDisciplinas$disciplinaItemDecoder = A3(
-	$elm$json$Json$Decode$map2,
-	$author$project$Page$ListDisciplinas$DisciplinaItem,
+var $author$project$Page$Denuncias$denunciaDecoder = A4(
+	$elm$json$Json$Decode$map3,
+	$author$project$Page$Denuncias$Denuncia,
 	A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$int),
-	A2($elm$json$Json$Decode$field, 'nome', $elm$json$Json$Decode$string));
-var $elm$json$Json$Decode$list = _Json_decodeList;
-var $author$project$Page$ListDisciplinas$disciplinaListDecoder = $elm$json$Json$Decode$list($author$project$Page$ListDisciplinas$disciplinaItemDecoder);
-var $author$project$Page$ListDisciplinas$disciplinaListUrl = 'http://127.0.0.1:5000/api/disciplinas';
+	A2($elm$json$Json$Decode$field, 'comentario', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'avaliacao_id', $elm$json$Json$Decode$int));
+var $author$project$Page$Denuncias$denunciasUrl = 'http://127.0.0.1:5000/api/denuncias';
 var $elm$json$Json$Decode$decodeString = _Json_runOnString;
 var $elm$http$Http$BadStatus_ = F2(
 	function (a, b) {
@@ -6193,6 +6223,82 @@ var $elm$http$Http$get = function (r) {
 	return $elm$http$Http$request(
 		{body: $elm$http$Http$emptyBody, expect: r.expect, headers: _List_Nil, method: 'GET', timeout: $elm$core$Maybe$Nothing, tracker: $elm$core$Maybe$Nothing, url: r.url});
 };
+var $elm$json$Json$Decode$list = _Json_decodeList;
+var $author$project$Page$Denuncias$getDenuncias = $elm$http$Http$get(
+	{
+		expect: A2(
+			$elm$http$Http$expectJson,
+			$author$project$Page$Denuncias$WebData,
+			$elm$json$Json$Decode$list($author$project$Page$Denuncias$denunciaDecoder)),
+		url: $author$project$Page$Denuncias$denunciasUrl
+	});
+var $author$project$Page$Denuncias$init = _Utils_Tuple2(
+	{denuncias: _List_Nil, errorMsg: $elm$core$Maybe$Nothing, state: $author$project$Page$Denuncias$Loading},
+	$author$project$Page$Denuncias$getDenuncias);
+var $author$project$Page$Disciplina$Loading = {$: 'Loading'};
+var $author$project$Page$Disciplina$emptyDisciplina = {nome: '', professores: _List_Nil};
+var $author$project$Page$Disciplina$WebData = function (a) {
+	return {$: 'WebData', a: a};
+};
+var $author$project$Page$Disciplina$Disciplina = F2(
+	function (nome, professores) {
+		return {nome: nome, professores: professores};
+	});
+var $author$project$Page$Disciplina$Professor = F4(
+	function (id, nome, qtdAvaliacoes, sumAvaliacoes) {
+		return {id: id, nome: nome, qtdAvaliacoes: qtdAvaliacoes, sumAvaliacoes: sumAvaliacoes};
+	});
+var $elm$json$Json$Decode$map4 = _Json_map4;
+var $author$project$Page$Disciplina$professorDecoder = A5(
+	$elm$json$Json$Decode$map4,
+	$author$project$Page$Disciplina$Professor,
+	A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'nome', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'qtd_avaliacoes', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'sum_avaliacoes', $elm$json$Json$Decode$int));
+var $author$project$Page$Disciplina$disciplinaDecoder = A3(
+	$elm$json$Json$Decode$map2,
+	$author$project$Page$Disciplina$Disciplina,
+	A2($elm$json$Json$Decode$field, 'nome', $elm$json$Json$Decode$string),
+	A2(
+		$elm$json$Json$Decode$field,
+		'professores',
+		$elm$json$Json$Decode$list($author$project$Page$Disciplina$professorDecoder)));
+var $author$project$Page$Disciplina$disciplinaUrl = function (id) {
+	return 'http://127.0.0.1:5000/api/disciplina/' + $elm$core$String$fromInt(id);
+};
+var $author$project$Page$Disciplina$getDisciplina = function (disciplinaId) {
+	return $elm$http$Http$get(
+		{
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Disciplina$WebData, $author$project$Page$Disciplina$disciplinaDecoder),
+			url: $author$project$Page$Disciplina$disciplinaUrl(disciplinaId)
+		});
+};
+var $author$project$Page$Disciplina$init = function (disciplinaId) {
+	return _Utils_Tuple2(
+		{disciplina: $author$project$Page$Disciplina$emptyDisciplina, disciplinaId: disciplinaId, errorMsg: $elm$core$Maybe$Nothing, state: $author$project$Page$Disciplina$Loading},
+		$author$project$Page$Disciplina$getDisciplina(disciplinaId));
+};
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
+var $author$project$Page$Home$init = function (isAdmin) {
+	return _Utils_Tuple2(
+		{isAdmin: isAdmin},
+		$elm$core$Platform$Cmd$none);
+};
+var $author$project$Page$ListDisciplinas$WebData = function (a) {
+	return {$: 'WebData', a: a};
+};
+var $author$project$Page$ListDisciplinas$DisciplinaItem = F2(
+	function (id, nome) {
+		return {id: id, nome: nome};
+	});
+var $author$project$Page$ListDisciplinas$disciplinaItemDecoder = A3(
+	$elm$json$Json$Decode$map2,
+	$author$project$Page$ListDisciplinas$DisciplinaItem,
+	A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'nome', $elm$json$Json$Decode$string));
+var $author$project$Page$ListDisciplinas$disciplinaListDecoder = $elm$json$Json$Decode$list($author$project$Page$ListDisciplinas$disciplinaItemDecoder);
+var $author$project$Page$ListDisciplinas$disciplinaListUrl = 'http://127.0.0.1:5000/api/disciplinas';
 var $author$project$Page$ListDisciplinas$getDisciplinaList = $elm$http$Http$get(
 	{
 		expect: A2($elm$http$Http$expectJson, $author$project$Page$ListDisciplinas$WebData, $author$project$Page$ListDisciplinas$disciplinaListDecoder),
@@ -6201,20 +6307,21 @@ var $author$project$Page$ListDisciplinas$getDisciplinaList = $elm$http$Http$get(
 var $author$project$Page$ListDisciplinas$init = _Utils_Tuple2(
 	{disciplinas: _List_Nil, errorMsg: $elm$core$Maybe$Nothing},
 	$author$project$Page$ListDisciplinas$getDisciplinaList);
+var $author$project$Page$Login$emptyLoginUser = {email: '', password: ''};
+var $author$project$Page$Login$emptyRegisterUser = {curso: '', email: '', matricula: '', nome: '', password: ''};
 var $author$project$Page$Login$init = _Utils_Tuple2(
-	{email: '', errorMsg: $elm$core$Maybe$Nothing, password: '', user: $elm$core$Maybe$Nothing},
+	{loginErrorMsg: $elm$core$Maybe$Nothing, loginUser: $author$project$Page$Login$emptyLoginUser, registerErrorMsg: $elm$core$Maybe$Nothing, registerUser: $author$project$Page$Login$emptyRegisterUser, user: $elm$core$Maybe$Nothing},
 	$elm$core$Platform$Cmd$none);
 var $author$project$Page$Perfil$Showing = {$: 'Showing'};
 var $author$project$Page$Perfil$emptyPasswordInfo = {currentPassword: '', newPassword: ''};
 var $author$project$Page$Perfil$emptyUser = {curso: '', email: '', matricula: '', nome: ''};
-var $author$project$Page$Perfil$WebData = function (a) {
-	return {$: 'WebData', a: a};
+var $author$project$Page$Perfil$WebUserData = function (a) {
+	return {$: 'WebUserData', a: a};
 };
 var $author$project$Page$Perfil$User = F4(
 	function (email, nome, matricula, curso) {
 		return {curso: curso, email: email, matricula: matricula, nome: nome};
 	});
-var $elm$json$Json$Decode$map4 = _Json_map4;
 var $author$project$Page$Perfil$userDecoder = A5(
 	$elm$json$Json$Decode$map4,
 	$author$project$Page$Perfil$User,
@@ -6225,19 +6332,182 @@ var $author$project$Page$Perfil$userDecoder = A5(
 var $author$project$Page$Perfil$userUrl = function (userId) {
 	return 'http://127.0.0.1:5000/api/user/' + $elm$core$String$fromInt(userId);
 };
-var $author$project$Page$Perfil$getUser = function (userId) {
+var $author$project$Page$Perfil$getUserCmd = function (userId) {
 	return $elm$http$Http$get(
 		{
-			expect: A2($elm$http$Http$expectJson, $author$project$Page$Perfil$WebData, $author$project$Page$Perfil$userDecoder),
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Perfil$WebUserData, $author$project$Page$Perfil$userDecoder),
 			url: $author$project$Page$Perfil$userUrl(userId)
 		});
 };
 var $author$project$Page$Perfil$init = function (userId) {
 	return _Utils_Tuple2(
-		{errorMsg: $elm$core$Maybe$Nothing, passwordInfo: $author$project$Page$Perfil$emptyPasswordInfo, state: $author$project$Page$Perfil$Showing, updatingUser: $author$project$Page$Perfil$emptyUser, user: $elm$core$Maybe$Nothing, userId: userId},
-		$author$project$Page$Perfil$getUser(userId));
+		{errorMsg: $elm$core$Maybe$Nothing, infoMsg: $elm$core$Maybe$Nothing, passwordInfo: $author$project$Page$Perfil$emptyPasswordInfo, state: $author$project$Page$Perfil$Showing, updatingUser: $author$project$Page$Perfil$emptyUser, user: $elm$core$Maybe$Nothing, userId: userId},
+		$author$project$Page$Perfil$getUserCmd(userId));
+};
+var $author$project$Page$Professor$Loading = {$: 'Loading'};
+var $author$project$Page$Professor$emptyProfessor = {avaliacoes: _List_Nil, nome: '', qtdAvaliacoes: 0, sumAvaliacoes: 0, turmas: _List_Nil};
+var $author$project$Page$Professor$WebProfessorData = function (a) {
+	return {$: 'WebProfessorData', a: a};
+};
+var $author$project$Page$Professor$Professor = F5(
+	function (nome, turmas, qtdAvaliacoes, sumAvaliacoes, avaliacoes) {
+		return {avaliacoes: avaliacoes, nome: nome, qtdAvaliacoes: qtdAvaliacoes, sumAvaliacoes: sumAvaliacoes, turmas: turmas};
+	});
+var $author$project$Page$Professor$Avaliacao = F5(
+	function (id, userId, userNome, comentario, pontuacao) {
+		return {comentario: comentario, id: id, pontuacao: pontuacao, userId: userId, userNome: userNome};
+	});
+var $elm$json$Json$Decode$map5 = _Json_map5;
+var $author$project$Page$Professor$avaliacaoDecoder = A6(
+	$elm$json$Json$Decode$map5,
+	$author$project$Page$Professor$Avaliacao,
+	A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'user_id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'user_nome', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'comentario', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'pontuacao', $elm$json$Json$Decode$int));
+var $author$project$Page$Professor$Turma = F3(
+	function (id, numero, nome) {
+		return {id: id, nome: nome, numero: numero};
+	});
+var $author$project$Page$Professor$turmaDecoder = A4(
+	$elm$json$Json$Decode$map3,
+	$author$project$Page$Professor$Turma,
+	A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'numero', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'nome', $elm$json$Json$Decode$string));
+var $author$project$Page$Professor$professorDecoder = A6(
+	$elm$json$Json$Decode$map5,
+	$author$project$Page$Professor$Professor,
+	A2($elm$json$Json$Decode$field, 'nome', $elm$json$Json$Decode$string),
+	A2(
+		$elm$json$Json$Decode$field,
+		'turmas',
+		$elm$json$Json$Decode$list($author$project$Page$Professor$turmaDecoder)),
+	A2($elm$json$Json$Decode$field, 'qtd_avaliacoes', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'sum_avaliacoes', $elm$json$Json$Decode$int),
+	A2(
+		$elm$json$Json$Decode$field,
+		'avaliacoes',
+		$elm$json$Json$Decode$list($author$project$Page$Professor$avaliacaoDecoder)));
+var $author$project$Page$Professor$professorUrl = function (id) {
+	return 'http://127.0.0.1:5000/api/professor/' + $elm$core$String$fromInt(id);
+};
+var $author$project$Page$Professor$getProfessor = function (professorId) {
+	return $elm$http$Http$get(
+		{
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Professor$WebProfessorData, $author$project$Page$Professor$professorDecoder),
+			url: $author$project$Page$Professor$professorUrl(professorId)
+		});
+};
+var $author$project$Page$Professor$init = function (_v0) {
+	var userId = _v0.a;
+	var professorId = _v0.b;
+	return _Utils_Tuple2(
+		{
+			errorMsg: $elm$core$Maybe$Nothing,
+			newAvaliacao: {comentario: '', pontuacao: 0, userId: userId},
+			professor: $author$project$Page$Professor$emptyProfessor,
+			professorId: professorId,
+			state: $author$project$Page$Professor$Loading
+		},
+		$author$project$Page$Professor$getProfessor(professorId));
+};
+var $author$project$Page$Professores$Loading = {$: 'Loading'};
+var $author$project$Page$Professores$WebData = function (a) {
+	return {$: 'WebData', a: a};
+};
+var $author$project$Page$Professores$Professor = F5(
+	function (id, nome, disciplinas, qtdAvaliacoes, sumAvaliacoes) {
+		return {disciplinas: disciplinas, id: id, nome: nome, qtdAvaliacoes: qtdAvaliacoes, sumAvaliacoes: sumAvaliacoes};
+	});
+var $author$project$Page$Professores$professoresDecoder = A6(
+	$elm$json$Json$Decode$map5,
+	$author$project$Page$Professores$Professor,
+	A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'nome', $elm$json$Json$Decode$string),
+	A2(
+		$elm$json$Json$Decode$field,
+		'disciplinas',
+		$elm$json$Json$Decode$list($elm$json$Json$Decode$string)),
+	A2($elm$json$Json$Decode$field, 'qtd_avaliacoes', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'sum_avaliacoes', $elm$json$Json$Decode$int));
+var $author$project$Page$Professores$professoresUrl = 'http://127.0.0.1:5000/api/professores/';
+var $author$project$Page$Professores$getProfessores = $elm$http$Http$get(
+	{
+		expect: A2(
+			$elm$http$Http$expectJson,
+			$author$project$Page$Professores$WebData,
+			$elm$json$Json$Decode$list($author$project$Page$Professores$professoresDecoder)),
+		url: $author$project$Page$Professores$professoresUrl
+	});
+var $author$project$Page$Professores$init = _Utils_Tuple2(
+	{errorMsg: $elm$core$Maybe$Nothing, professores: _List_Nil, state: $author$project$Page$Professores$Loading},
+	$author$project$Page$Professores$getProfessores);
+var $author$project$Page$Turma$Loading = {$: 'Loading'};
+var $author$project$Page$Turma$emptyTurma = {avaliacoes: _List_Nil, disciplinaId: 0, disciplinaNome: '', numero: '', professorId: 0, professorNome: '', qtdAvaliacoes: 0, sumAvaliacoes: 0};
+var $author$project$Page$Turma$WebTurmaData = function (a) {
+	return {$: 'WebTurmaData', a: a};
+};
+var $author$project$Page$Turma$Turma = F8(
+	function (numero, professorId, professorNome, disciplinaId, disciplinaNome, qtdAvaliacoes, sumAvaliacoes, avaliacoes) {
+		return {avaliacoes: avaliacoes, disciplinaId: disciplinaId, disciplinaNome: disciplinaNome, numero: numero, professorId: professorId, professorNome: professorNome, qtdAvaliacoes: qtdAvaliacoes, sumAvaliacoes: sumAvaliacoes};
+	});
+var $author$project$Page$Turma$Avaliacao = F5(
+	function (id, userId, userNome, comentario, pontuacao) {
+		return {comentario: comentario, id: id, pontuacao: pontuacao, userId: userId, userNome: userNome};
+	});
+var $author$project$Page$Turma$avaliacaoDecoder = A6(
+	$elm$json$Json$Decode$map5,
+	$author$project$Page$Turma$Avaliacao,
+	A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'user_id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'user_nome', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'comentario', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'pontuacao', $elm$json$Json$Decode$int));
+var $elm$json$Json$Decode$map8 = _Json_map8;
+var $author$project$Page$Turma$turmaDecoder = A9(
+	$elm$json$Json$Decode$map8,
+	$author$project$Page$Turma$Turma,
+	A2($elm$json$Json$Decode$field, 'numero', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'professor_id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'professor_nome', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'disciplina_id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'disciplina_nome', $elm$json$Json$Decode$string),
+	A2($elm$json$Json$Decode$field, 'qtd_avaliacoes', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'sum_avaliacoes', $elm$json$Json$Decode$int),
+	A2(
+		$elm$json$Json$Decode$field,
+		'avaliacoes',
+		$elm$json$Json$Decode$list($author$project$Page$Turma$avaliacaoDecoder)));
+var $author$project$Page$Turma$turmaUrl = function (id) {
+	return 'http://127.0.0.1:5000/api/turma/' + $elm$core$String$fromInt(id);
+};
+var $author$project$Page$Turma$getTurma = function (turmaId) {
+	return $elm$http$Http$get(
+		{
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Turma$WebTurmaData, $author$project$Page$Turma$turmaDecoder),
+			url: $author$project$Page$Turma$turmaUrl(turmaId)
+		});
+};
+var $author$project$Page$Turma$init = function (_v0) {
+	var userId = _v0.a;
+	var turmaId = _v0.b;
+	return _Utils_Tuple2(
+		{
+			errorMsg: $elm$core$Maybe$Nothing,
+			newAvaliacao: {comentario: '', pontuacao: 0, userId: userId},
+			state: $author$project$Page$Turma$Loading,
+			turma: $author$project$Page$Turma$emptyTurma,
+			turmaId: turmaId
+		},
+		$author$project$Page$Turma$getTurma(turmaId));
 };
 var $elm$core$Platform$Cmd$map = _Platform_map;
+var $elm$core$Tuple$second = function (_v0) {
+	var y = _v0.b;
+	return y;
+};
 var $author$project$Main$initCurrentPage = function (_v0) {
 	var model = _v0.a;
 	var existingCmds = _v0.b;
@@ -6257,29 +6527,66 @@ var $author$project$Main$initCurrentPage = function (_v0) {
 						$author$project$Main$Disciplinas(pageModel),
 						A2($elm$core$Platform$Cmd$map, $author$project$Main$DisciplinasMsg, pageCmds));
 				case 'Home':
-					var _v5 = $author$project$Page$Home$init;
+					var _v5 = $author$project$Page$Home$init(user.b);
 					var pageModel = _v5.a;
 					var pageCmds = _v5.b;
 					return _Utils_Tuple2(
 						$author$project$Main$Home(pageModel),
 						A2($elm$core$Platform$Cmd$map, $author$project$Main$HomeMsg, pageCmds));
 				case 'Login':
-					var _v6 = $author$project$Page$Home$init;
+					var _v6 = $author$project$Page$Home$init(user.b);
 					var pageModel = _v6.a;
 					var pageCmds = _v6.b;
 					return _Utils_Tuple2(
 						$author$project$Main$Home(pageModel),
 						A2($elm$core$Platform$Cmd$map, $author$project$Main$HomeMsg, pageCmds));
 				case 'Perfil':
-					var _v7 = $author$project$Page$Perfil$init(user);
+					var _v7 = $author$project$Page$Perfil$init(user.a);
 					var pageModel = _v7.a;
 					var pageCmds = _v7.b;
 					return _Utils_Tuple2(
 						$author$project$Main$Perfil(pageModel),
 						A2($elm$core$Platform$Cmd$map, $author$project$Main$PerfilMsg, pageCmds));
-				default:
+				case 'Disciplina':
+					var disciplinaId = _v3.a;
+					var _v8 = $author$project$Page$Disciplina$init(disciplinaId);
+					var pageModel = _v8.a;
+					var pageCmds = _v8.b;
+					return _Utils_Tuple2(
+						$author$project$Main$Disciplina(pageModel),
+						A2($elm$core$Platform$Cmd$map, $author$project$Main$DisciplinaMsg, pageCmds));
+				case 'Professores':
+					var _v9 = $author$project$Page$Professores$init;
+					var pageModel = _v9.a;
+					var pageCmds = _v9.b;
+					return _Utils_Tuple2(
+						$author$project$Main$Professores(pageModel),
+						A2($elm$core$Platform$Cmd$map, $author$project$Main$ProfessoresMsg, pageCmds));
+				case 'Turma':
 					var turmaId = _v3.a;
-					return _Utils_Tuple2($author$project$Main$NotFoundPage, $elm$core$Platform$Cmd$none);
+					var _v10 = $author$project$Page$Turma$init(
+						_Utils_Tuple2(user.a, turmaId));
+					var pageModel = _v10.a;
+					var pageCmds = _v10.b;
+					return _Utils_Tuple2(
+						$author$project$Main$Turma(pageModel),
+						A2($elm$core$Platform$Cmd$map, $author$project$Main$TurmaMsg, pageCmds));
+				case 'Professor':
+					var professorId = _v3.a;
+					var _v11 = $author$project$Page$Professor$init(
+						_Utils_Tuple2(user.a, professorId));
+					var pageModel = _v11.a;
+					var pageCmds = _v11.b;
+					return _Utils_Tuple2(
+						$author$project$Main$Professor(pageModel),
+						A2($elm$core$Platform$Cmd$map, $author$project$Main$ProfessorMsg, pageCmds));
+				default:
+					var _v12 = $author$project$Page$Denuncias$init;
+					var pageModel = _v12.a;
+					var pageCmds = _v12.b;
+					return _Utils_Tuple2(
+						$author$project$Main$Denuncias(pageModel),
+						A2($elm$core$Platform$Cmd$map, $author$project$Main$DenunciasMsg, pageCmds));
 			}
 		}();
 		var currentPage = _v2.a;
@@ -6292,9 +6599,9 @@ var $author$project$Main$initCurrentPage = function (_v0) {
 				_List_fromArray(
 					[existingCmds, mappedPageCmds])));
 	} else {
-		var _v8 = $author$project$Page$Login$init;
-		var pageModel = _v8.a;
-		var pageCmds = _v8.b;
+		var _v13 = $author$project$Page$Login$init;
+		var pageModel = _v13.a;
+		var pageCmds = _v13.b;
 		return _Utils_Tuple2(
 			_Utils_update(
 				model,
@@ -6306,9 +6613,17 @@ var $author$project$Main$initCurrentPage = function (_v0) {
 	}
 };
 var $author$project$Route$NotFound = {$: 'NotFound'};
+var $author$project$Route$Denuncias = {$: 'Denuncias'};
+var $author$project$Route$Disciplina = function (a) {
+	return {$: 'Disciplina', a: a};
+};
 var $author$project$Route$Disciplinas = {$: 'Disciplinas'};
 var $author$project$Route$Home = {$: 'Home'};
 var $author$project$Route$Perfil = {$: 'Perfil'};
+var $author$project$Route$Professor = function (a) {
+	return {$: 'Professor', a: a};
+};
+var $author$project$Route$Professores = {$: 'Professores'};
 var $author$project$Route$Turma = function (a) {
 	return {$: 'Turma', a: a};
 };
@@ -6486,7 +6801,29 @@ var $author$project$Route$matchRoute = $elm$url$Url$Parser$oneOf(
 			A2(
 				$elm$url$Url$Parser$slash,
 				$elm$url$Url$Parser$s('turma'),
-				$elm$url$Url$Parser$int))
+				$elm$url$Url$Parser$int)),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Disciplina,
+			A2(
+				$elm$url$Url$Parser$slash,
+				$elm$url$Url$Parser$s('disciplina'),
+				$elm$url$Url$Parser$int)),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Professor,
+			A2(
+				$elm$url$Url$Parser$slash,
+				$elm$url$Url$Parser$s('professor'),
+				$elm$url$Url$Parser$int)),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Professores,
+			$elm$url$Url$Parser$s('professores')),
+			A2(
+			$elm$url$Url$Parser$map,
+			$author$project$Route$Denuncias,
+			$elm$url$Url$Parser$s('denuncias'))
 		]));
 var $elm$url$Url$Parser$getFirstMatch = function (states) {
 	getFirstMatch:
@@ -6630,7 +6967,31 @@ var $elm$json$Json$Decode$oneOf = _Json_oneOf;
 var $elm$browser$Browser$Navigation$load = _Browser_load;
 var $elm$browser$Browser$Navigation$pushUrl = _Browser_pushUrl;
 var $elm$json$Json$Encode$int = _Json_wrap;
-var $author$project$Main$sendUserIdToStorage = _Platform_outgoingPort('sendUserIdToStorage', $elm$json$Json$Encode$int);
+var $author$project$Main$removeUserIdFromStorage = _Platform_outgoingPort('removeUserIdFromStorage', $elm$json$Json$Encode$int);
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$json$Json$Encode$list = F2(
+	function (func, entries) {
+		return _Json_wrap(
+			A3(
+				$elm$core$List$foldl,
+				_Json_addEntry(func),
+				_Json_emptyArray(_Utils_Tuple0),
+				entries));
+	});
+var $author$project$Main$sendUserIdToStorage = _Platform_outgoingPort(
+	'sendUserIdToStorage',
+	function ($) {
+		var a = $.a;
+		var b = $.b;
+		return A2(
+			$elm$json$Json$Encode$list,
+			$elm$core$Basics$identity,
+			_List_fromArray(
+				[
+					$elm$json$Json$Encode$int(a),
+					$elm$json$Json$Encode$bool(b)
+				]));
+	});
 var $elm$url$Url$addPort = F2(
 	function (maybePort, starter) {
 		if (maybePort.$ === 'Nothing') {
@@ -6675,10 +7036,6 @@ var $elm$url$Url$toString = function (url) {
 					_Utils_ap(http, url.host)),
 				url.path)));
 };
-var $author$project$Page$Home$update = F2(
-	function (msg, model) {
-		return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-	});
 var $author$project$ErrorMsg$buildErrorMsg = function (httpError) {
 	switch (httpError.$) {
 		case 'BadUrl':
@@ -6696,6 +7053,155 @@ var $author$project$ErrorMsg$buildErrorMsg = function (httpError) {
 			return message;
 	}
 };
+var $author$project$Page$Denuncias$WebRemoveAvaliacaoData = function (a) {
+	return {$: 'WebRemoveAvaliacaoData', a: a};
+};
+var $author$project$Page$Denuncias$removeAvaliacaoDecoder = A2($elm$json$Json$Decode$field, 'message', $elm$json$Json$Decode$string);
+var $author$project$Page$Denuncias$removeAvaliacaoUrl = function (id) {
+	return 'http://127.0.0.1:5000/api/avaliacao/' + $elm$core$String$fromInt(id);
+};
+var $author$project$Page$Denuncias$removeAvaliacaoCmd = function (avaliacaoId) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$emptyBody,
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Denuncias$WebRemoveAvaliacaoData, $author$project$Page$Denuncias$removeAvaliacaoDecoder),
+			headers: _List_Nil,
+			method: 'DELETE',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Denuncias$removeAvaliacaoUrl(avaliacaoId)
+		});
+};
+var $author$project$Page$Denuncias$WebRemoveDenunciaData = function (a) {
+	return {$: 'WebRemoveDenunciaData', a: a};
+};
+var $author$project$Page$Denuncias$removeDenunciaDecoder = A2($elm$json$Json$Decode$field, 'message', $elm$json$Json$Decode$string);
+var $author$project$Page$Denuncias$removeDenunciaUrl = function (id) {
+	return 'http://127.0.0.1:5000/api/denuncia/' + $elm$core$String$fromInt(id);
+};
+var $author$project$Page$Denuncias$removeDenunciaCmd = function (denunciaId) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$emptyBody,
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Denuncias$WebRemoveDenunciaData, $author$project$Page$Denuncias$removeDenunciaDecoder),
+			headers: _List_Nil,
+			method: 'DELETE',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Denuncias$removeDenunciaUrl(denunciaId)
+		});
+};
+var $author$project$Page$Denuncias$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'WebData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var denuncias = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{denuncias: denuncias}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(
+									$author$project$ErrorMsg$buildErrorMsg(httpError))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'WebRemoveDenunciaData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var message = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(message)
+							}),
+						$author$project$Page$Denuncias$getDenuncias);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(
+									$author$project$ErrorMsg$buildErrorMsg(httpError))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'WebRemoveAvaliacaoData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var message = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(message)
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(
+									$author$project$ErrorMsg$buildErrorMsg(httpError))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'RemoverAvaliacao':
+				var avaliacaoId = msg.a;
+				var denunciaId = msg.b;
+				return _Utils_Tuple2(
+					model,
+					$elm$core$Platform$Cmd$batch(
+						_List_fromArray(
+							[
+								$author$project$Page$Denuncias$removeAvaliacaoCmd(avaliacaoId),
+								$author$project$Page$Denuncias$removeDenunciaCmd(denunciaId)
+							])));
+			default:
+				var denunciaId = msg.a;
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$Denuncias$removeDenunciaCmd(denunciaId));
+		}
+	});
+var $author$project$Page$Disciplina$update = F2(
+	function (msg, model) {
+		var result = msg.a;
+		if (result.$ === 'Ok') {
+			var disciplina = result.a;
+			return _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{disciplina: disciplina}),
+				$elm$core$Platform$Cmd$none);
+		} else {
+			var httpError = result.a;
+			return _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{
+						errorMsg: $elm$core$Maybe$Just(
+							$author$project$ErrorMsg$buildErrorMsg(httpError))
+					}),
+				$elm$core$Platform$Cmd$none);
+		}
+	});
+var $author$project$Page$Home$update = F2(
+	function (msg, model) {
+		return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+	});
 var $author$project$Page$ListDisciplinas$update = F2(
 	function (msg, model) {
 		var result = msg.a;
@@ -6718,8 +7224,8 @@ var $author$project$Page$ListDisciplinas$update = F2(
 				$elm$core$Platform$Cmd$none);
 		}
 	});
-var $author$project$Page$Login$WebData = function (a) {
-	return {$: 'WebData', a: a};
+var $author$project$Page$Login$WebLoginData = function (a) {
+	return {$: 'WebLoginData', a: a};
 };
 var $elm$http$Http$jsonBody = function (value) {
 	return A2(
@@ -6727,7 +7233,16 @@ var $elm$http$Http$jsonBody = function (value) {
 		'application/json',
 		A2($elm$json$Json$Encode$encode, 0, value));
 };
-var $author$project$Page$Login$userDecoder = A2($elm$json$Json$Decode$field, 'user_id', $elm$json$Json$Decode$int);
+var $author$project$Page$Login$loginUrl = 'http://127.0.0.1:5000/api/user';
+var $elm$core$Tuple$pair = F2(
+	function (a, b) {
+		return _Utils_Tuple2(a, b);
+	});
+var $author$project$Page$Login$userIdDecoder = A3(
+	$elm$json$Json$Decode$map2,
+	$elm$core$Tuple$pair,
+	A2($elm$json$Json$Decode$field, 'user_id', $elm$json$Json$Decode$int),
+	A2($elm$json$Json$Decode$field, 'is_admin', $elm$json$Json$Decode$bool));
 var $elm$json$Json$Encode$object = function (pairs) {
 	return _Json_wrap(
 		A3(
@@ -6742,54 +7257,206 @@ var $elm$json$Json$Encode$object = function (pairs) {
 			pairs));
 };
 var $elm$json$Json$Encode$string = _Json_wrap;
-var $author$project$Page$Login$userEncoder = function (model) {
+var $author$project$Page$Login$userLoginEncoder = function (user) {
 	return $elm$json$Json$Encode$object(
 		_List_fromArray(
 			[
 				_Utils_Tuple2(
 				'email',
-				$elm$json$Json$Encode$string(model.email)),
+				$elm$json$Json$Encode$string(user.email)),
 				_Utils_Tuple2(
 				'password',
-				$elm$json$Json$Encode$string(model.password))
+				$elm$json$Json$Encode$string(user.password))
 			]));
 };
-var $author$project$Page$Login$authUserCmd = F2(
-	function (model, apiUrl) {
-		return $elm$http$Http$request(
-			{
-				body: $elm$http$Http$jsonBody(
-					$author$project$Page$Login$userEncoder(model)),
-				expect: A2($elm$http$Http$expectJson, $author$project$Page$Login$WebData, $author$project$Page$Login$userDecoder),
-				headers: _List_Nil,
-				method: 'POST',
-				timeout: $elm$core$Maybe$Nothing,
-				tracker: $elm$core$Maybe$Nothing,
-				url: apiUrl
-			});
+var $author$project$Page$Login$authUserCmd = function (model) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$jsonBody(
+				$author$project$Page$Login$userLoginEncoder(model.loginUser)),
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Login$WebLoginData, $author$project$Page$Login$userIdDecoder),
+			headers: _List_Nil,
+			method: 'POST',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Login$loginUrl
+		});
+};
+var $author$project$Page$Login$loginUpdateEmail = F2(
+	function (user, value) {
+		return _Utils_update(
+			user,
+			{email: value});
 	});
-var $author$project$Page$Login$loginUrl = 'http://127.0.0.1:5000/api/user';
+var $author$project$Page$Login$loginUpdatePassword = F2(
+	function (user, value) {
+		return _Utils_update(
+			user,
+			{password: value});
+	});
+var $author$project$Page$Login$registerUpdateCurso = F2(
+	function (user, value) {
+		return _Utils_update(
+			user,
+			{curso: value});
+	});
+var $author$project$Page$Login$registerUpdateEmail = F2(
+	function (user, value) {
+		return _Utils_update(
+			user,
+			{email: value});
+	});
+var $author$project$Page$Login$registerUpdateMatricula = F2(
+	function (user, value) {
+		return _Utils_update(
+			user,
+			{matricula: value});
+	});
+var $author$project$Page$Login$registerUpdateNome = F2(
+	function (user, value) {
+		return _Utils_update(
+			user,
+			{nome: value});
+	});
+var $author$project$Page$Login$registerUpdatePassword = F2(
+	function (user, value) {
+		return _Utils_update(
+			user,
+			{password: value});
+	});
+var $author$project$Page$Login$WebRegisterData = function (a) {
+	return {$: 'WebRegisterData', a: a};
+};
+var $author$project$Page$Login$registerUrl = 'http://127.0.0.1:5000/api/user/register';
+var $author$project$Page$Login$userRegisterEncoder = function (user) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'email',
+				$elm$json$Json$Encode$string(user.email)),
+				_Utils_Tuple2(
+				'nome',
+				$elm$json$Json$Encode$string(user.nome)),
+				_Utils_Tuple2(
+				'matricula',
+				$elm$json$Json$Encode$string(user.matricula)),
+				_Utils_Tuple2(
+				'curso',
+				$elm$json$Json$Encode$string(user.curso)),
+				_Utils_Tuple2(
+				'password',
+				$elm$json$Json$Encode$string(user.password))
+			]));
+};
+var $author$project$Page$Login$registerUserCmd = function (model) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$jsonBody(
+				$author$project$Page$Login$userRegisterEncoder(model.registerUser)),
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Login$WebRegisterData, $author$project$Page$Login$userIdDecoder),
+			headers: _List_Nil,
+			method: 'POST',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Login$registerUrl
+		});
+};
 var $author$project$Page$Login$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
-			case 'SetEmail':
+			case 'LoginSetEmail':
 				var email = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{email: email}),
+						{
+							loginUser: A2($author$project$Page$Login$loginUpdateEmail, model.loginUser, email)
+						}),
 					$elm$core$Platform$Cmd$none);
-			case 'SetPassword':
+			case 'LoginSetPassword':
 				var password = msg.a;
 				return _Utils_Tuple2(
 					_Utils_update(
 						model,
-						{password: password}),
+						{
+							loginUser: A2($author$project$Page$Login$loginUpdatePassword, model.loginUser, password)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'RegisterSetEmail':
+				var email = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							registerUser: A2($author$project$Page$Login$registerUpdateEmail, model.registerUser, email)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'RegisterSetNome':
+				var nome = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							registerUser: A2($author$project$Page$Login$registerUpdateNome, model.registerUser, nome)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'RegisterSetMatricula':
+				var matricula = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							registerUser: A2($author$project$Page$Login$registerUpdateMatricula, model.registerUser, matricula)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'RegisterSetCurso':
+				var curso = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							registerUser: A2($author$project$Page$Login$registerUpdateCurso, model.registerUser, curso)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'RegisterSetPassword':
+				var password = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							registerUser: A2($author$project$Page$Login$registerUpdatePassword, model.registerUser, password)
+						}),
 					$elm$core$Platform$Cmd$none);
 			case 'ClickLogin':
 				return _Utils_Tuple2(
 					model,
-					A2($author$project$Page$Login$authUserCmd, model, $author$project$Page$Login$loginUrl));
+					$author$project$Page$Login$authUserCmd(model));
+			case 'ClickRegister':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$Login$registerUserCmd(model));
+			case 'WebLoginData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var user = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								user: $elm$core$Maybe$Just(user)
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								loginErrorMsg: $elm$core$Maybe$Just('Email or Password Invalid')
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
 			default:
 				var result = msg.a;
 				if (result.$ === 'Ok') {
@@ -6807,8 +7474,7 @@ var $author$project$Page$Login$update = F2(
 						_Utils_update(
 							model,
 							{
-								errorMsg: $elm$core$Maybe$Just(
-									$author$project$ErrorMsg$buildErrorMsg(httpError))
+								registerErrorMsg: $elm$core$Maybe$Just('Fail to register user')
 							}),
 						$elm$core$Platform$Cmd$none);
 				}
@@ -6816,6 +7482,25 @@ var $author$project$Page$Login$update = F2(
 	});
 var $author$project$Page$Perfil$UpdatingPassword = {$: 'UpdatingPassword'};
 var $author$project$Page$Perfil$UpdatingUser = {$: 'UpdatingUser'};
+var $author$project$Page$Perfil$WebDeleteUser = function (a) {
+	return {$: 'WebDeleteUser', a: a};
+};
+var $author$project$Page$Perfil$deleteUserDecoder = A2($elm$json$Json$Decode$field, 'message', $elm$json$Json$Decode$string);
+var $author$project$Page$Perfil$deleteUserUrl = function (userId) {
+	return 'http://127.0.0.1:5000/api/user/' + $elm$core$String$fromInt(userId);
+};
+var $author$project$Page$Perfil$deleteUserCmd = function (model) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$emptyBody,
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Perfil$WebDeleteUser, $author$project$Page$Perfil$deleteUserDecoder),
+			headers: _List_Nil,
+			method: 'DELETE',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Perfil$deleteUserUrl(model.userId)
+		});
+};
 var $author$project$Page$Perfil$updateCurrentPassword = F2(
 	function (model, value) {
 		return _Utils_update(
@@ -6888,10 +7573,76 @@ var $author$project$Page$Perfil$updateNome = F2(
 				}(model.updatingUser)
 			});
 	});
+var $author$project$Page$Perfil$WebPasswordData = function (a) {
+	return {$: 'WebPasswordData', a: a};
+};
+var $author$project$Page$Perfil$updatePasswordDecoder = A2($elm$json$Json$Decode$field, 'message', $elm$json$Json$Decode$string);
+var $author$project$Page$Perfil$updatePasswordEncoder = function (password) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'current_password',
+				$elm$json$Json$Encode$string(password.currentPassword)),
+				_Utils_Tuple2(
+				'new_password',
+				$elm$json$Json$Encode$string(password.newPassword))
+			]));
+};
+var $author$project$Page$Perfil$updatePasswordUrl = function (userId) {
+	return 'http://127.0.0.1:5000/api/user/' + ($elm$core$String$fromInt(userId) + '/password');
+};
+var $author$project$Page$Perfil$updatePasswordCmd = function (model) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$jsonBody(
+				$author$project$Page$Perfil$updatePasswordEncoder(model.passwordInfo)),
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Perfil$WebPasswordData, $author$project$Page$Perfil$updatePasswordDecoder),
+			headers: _List_Nil,
+			method: 'PUT',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Perfil$updatePasswordUrl(model.userId)
+		});
+};
+var $author$project$Page$Perfil$WebUpdateUserData = function (a) {
+	return {$: 'WebUpdateUserData', a: a};
+};
+var $author$project$Page$Perfil$userUpdateEncoder = function (user) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'email',
+				$elm$json$Json$Encode$string(user.email)),
+				_Utils_Tuple2(
+				'nome',
+				$elm$json$Json$Encode$string(user.nome)),
+				_Utils_Tuple2(
+				'matricula',
+				$elm$json$Json$Encode$string(user.matricula)),
+				_Utils_Tuple2(
+				'curso',
+				$elm$json$Json$Encode$string(user.curso))
+			]));
+};
+var $author$project$Page$Perfil$updateUserCmd = function (model) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$jsonBody(
+				$author$project$Page$Perfil$userUpdateEncoder(model.updatingUser)),
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Perfil$WebUpdateUserData, $author$project$Page$Perfil$userDecoder),
+			headers: _List_Nil,
+			method: 'PUT',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Perfil$userUrl(model.userId)
+		});
+};
 var $author$project$Page$Perfil$update = F2(
 	function (msg, model) {
 		switch (msg.$) {
-			case 'WebData':
+			case 'WebUserData':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
 					var user = result.a;
@@ -6899,6 +7650,7 @@ var $author$project$Page$Perfil$update = F2(
 						_Utils_update(
 							model,
 							{
+								state: $author$project$Page$Perfil$Showing,
 								updatingUser: user,
 								user: $elm$core$Maybe$Just(user)
 							}),
@@ -6911,6 +7663,74 @@ var $author$project$Page$Perfil$update = F2(
 							{
 								errorMsg: $elm$core$Maybe$Just(
 									$author$project$ErrorMsg$buildErrorMsg(httpError))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'WebUpdateUserData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var user = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								infoMsg: $elm$core$Maybe$Just('SUCESS: User updated'),
+								state: $author$project$Page$Perfil$Showing,
+								updatingUser: user,
+								user: $elm$core$Maybe$Just(user)
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								infoMsg: $elm$core$Maybe$Just('FAIL:  error in update user')
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'WebPasswordData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var infoMsg = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								infoMsg: $elm$core$Maybe$Just('SUCESS: Password updated'),
+								state: $author$project$Page$Perfil$Showing
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								infoMsg: $elm$core$Maybe$Just('FAIL: current password is wrong')
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'WebDeleteUser':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var infoMsg = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								infoMsg: $elm$core$Maybe$Just('SUCESS: User deleted sucessfully'),
+								state: $author$project$Page$Perfil$Showing
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								infoMsg: $elm$core$Maybe$Just('FAIL: Fail to delete user')
 							}),
 						$elm$core$Platform$Cmd$none);
 				}
@@ -6963,130 +7783,620 @@ var $author$project$Page$Perfil$update = F2(
 						{state: $author$project$Page$Perfil$Showing}),
 					$elm$core$Platform$Cmd$none);
 			case 'ClickSendUserUpdate':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$Perfil$updateUserCmd(model));
+			case 'ClickSendPasswordUpdate':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$Perfil$updatePasswordCmd(model));
+			case 'Loggout':
 				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			default:
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$Perfil$deleteUserCmd(model));
+		}
+	});
+var $author$project$Page$Professor$addAvalicao = F2(
+	function (professor, avaliacao) {
+		return _Utils_update(
+			professor,
+			{
+				avaliacoes: _Utils_ap(
+					professor.avaliacoes,
+					_List_fromArray(
+						[avaliacao])),
+				qtdAvaliacoes: professor.qtdAvaliacoes + 1,
+				sumAvaliacoes: professor.sumAvaliacoes + avaliacao.pontuacao
+			});
+	});
+var $author$project$Page$Professor$WebNewAvaliacaoData = function (a) {
+	return {$: 'WebNewAvaliacaoData', a: a};
+};
+var $author$project$Page$Professor$newAvaliacaoEncoder = function (avaliacao) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'user_id',
+				$elm$json$Json$Encode$int(avaliacao.userId)),
+				_Utils_Tuple2(
+				'comentario',
+				$elm$json$Json$Encode$string(avaliacao.comentario)),
+				_Utils_Tuple2(
+				'pontuacao',
+				$elm$json$Json$Encode$int(avaliacao.pontuacao))
+			]));
+};
+var $author$project$Page$Professor$newAvaliacaoUrl = function (id) {
+	return 'http://127.0.0.1:5000/api/professor/' + ($elm$core$String$fromInt(id) + '/avaliacao');
+};
+var $author$project$Page$Professor$newAvaliacaoCmd = function (model) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$jsonBody(
+				$author$project$Page$Professor$newAvaliacaoEncoder(model.newAvaliacao)),
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Professor$WebNewAvaliacaoData, $author$project$Page$Professor$avaliacaoDecoder),
+			headers: _List_Nil,
+			method: 'POST',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Professor$newAvaliacaoUrl(model.professorId)
+		});
+};
+var $author$project$Page$Professor$updateComentario = F2(
+	function (avaliacao, value) {
+		return _Utils_update(
+			avaliacao,
+			{comentario: value});
+	});
+var $elm$core$Basics$modBy = _Basics_modBy;
+var $elm$core$Maybe$withDefault = F2(
+	function (_default, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return value;
+		} else {
+			return _default;
+		}
+	});
+var $author$project$Page$Professor$updatePontuacao = F2(
+	function (avaliacao, value) {
+		return _Utils_update(
+			avaliacao,
+			{
+				pontuacao: A2(
+					$elm$core$Basics$modBy,
+					6,
+					A2(
+						$elm$core$Maybe$withDefault,
+						0,
+						$elm$core$String$toInt(value)))
+			});
+	});
+var $author$project$Page$Professor$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'WebProfessorData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var professor = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{professor: professor}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(
+									$author$project$ErrorMsg$buildErrorMsg(httpError))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'WebNewAvaliacaoData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var avaliacao = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								professor: A2($author$project$Page$Professor$addAvalicao, model.professor, avaliacao)
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(
+									$author$project$ErrorMsg$buildErrorMsg(httpError))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'SetComentario':
+				var comentario = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							newAvaliacao: A2($author$project$Page$Professor$updateComentario, model.newAvaliacao, comentario)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'SetPontuacao':
+				var pontuacao = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							newAvaliacao: A2($author$project$Page$Professor$updatePontuacao, model.newAvaliacao, pontuacao)
+						}),
+					$elm$core$Platform$Cmd$none);
+			default:
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$Professor$newAvaliacaoCmd(model));
+		}
+	});
+var $author$project$Page$Professores$update = F2(
+	function (msg, model) {
+		var result = msg.a;
+		if (result.$ === 'Ok') {
+			var professores = result.a;
+			return _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{professores: professores}),
+				$elm$core$Platform$Cmd$none);
+		} else {
+			var httpError = result.a;
+			return _Utils_Tuple2(
+				_Utils_update(
+					model,
+					{
+						errorMsg: $elm$core$Maybe$Just(
+							$author$project$ErrorMsg$buildErrorMsg(httpError))
+					}),
+				$elm$core$Platform$Cmd$none);
+		}
+	});
+var $author$project$Page$Turma$addAvalicao = F2(
+	function (turma, avaliacao) {
+		return _Utils_update(
+			turma,
+			{
+				avaliacoes: _Utils_ap(
+					turma.avaliacoes,
+					_List_fromArray(
+						[avaliacao])),
+				qtdAvaliacoes: turma.qtdAvaliacoes + 1,
+				sumAvaliacoes: turma.sumAvaliacoes + avaliacao.pontuacao
+			});
+	});
+var $author$project$Page$Turma$WebDenunciaData = function (a) {
+	return {$: 'WebDenunciaData', a: a};
+};
+var $author$project$Page$Turma$addDenuncia = 'http://127.0.0.1:5000/api/denuncias';
+var $author$project$Page$Turma$denunciaDecoder = A2($elm$json$Json$Decode$field, 'message', $elm$json$Json$Decode$string);
+var $author$project$Page$Turma$denunciaEncoder = function (avaliacaoId) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'avaliacao_id',
+				$elm$json$Json$Encode$int(avaliacaoId))
+			]));
+};
+var $author$project$Page$Turma$denunciaCmd = function (avaliacaoId) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$jsonBody(
+				$author$project$Page$Turma$denunciaEncoder(avaliacaoId)),
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Turma$WebDenunciaData, $author$project$Page$Turma$denunciaDecoder),
+			headers: _List_Nil,
+			method: 'POST',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Turma$addDenuncia
+		});
+};
+var $author$project$Page$Turma$WebNewAvaliacaoData = function (a) {
+	return {$: 'WebNewAvaliacaoData', a: a};
+};
+var $author$project$Page$Turma$newAvaliacaoEncoder = function (avaliacao) {
+	return $elm$json$Json$Encode$object(
+		_List_fromArray(
+			[
+				_Utils_Tuple2(
+				'user_id',
+				$elm$json$Json$Encode$int(avaliacao.userId)),
+				_Utils_Tuple2(
+				'comentario',
+				$elm$json$Json$Encode$string(avaliacao.comentario)),
+				_Utils_Tuple2(
+				'pontuacao',
+				$elm$json$Json$Encode$int(avaliacao.pontuacao))
+			]));
+};
+var $author$project$Page$Turma$newAvaliacaoUrl = function (id) {
+	return 'http://127.0.0.1:5000/api/turma/' + ($elm$core$String$fromInt(id) + '/avaliacao');
+};
+var $author$project$Page$Turma$newAvaliacaoCmd = function (model) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$jsonBody(
+				$author$project$Page$Turma$newAvaliacaoEncoder(model.newAvaliacao)),
+			expect: A2($elm$http$Http$expectJson, $author$project$Page$Turma$WebNewAvaliacaoData, $author$project$Page$Turma$avaliacaoDecoder),
+			headers: _List_Nil,
+			method: 'POST',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: $author$project$Page$Turma$newAvaliacaoUrl(model.turmaId)
+		});
+};
+var $author$project$Page$Turma$updateComentario = F2(
+	function (avaliacao, value) {
+		return _Utils_update(
+			avaliacao,
+			{comentario: value});
+	});
+var $author$project$Page$Turma$updatePontuacao = F2(
+	function (avaliacao, value) {
+		return _Utils_update(
+			avaliacao,
+			{
+				pontuacao: A2(
+					$elm$core$Basics$modBy,
+					6,
+					A2(
+						$elm$core$Maybe$withDefault,
+						0,
+						$elm$core$String$toInt(value)))
+			});
+	});
+var $author$project$Page$Turma$update = F2(
+	function (msg, model) {
+		switch (msg.$) {
+			case 'WebTurmaData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var turma = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{turma: turma}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(
+									$author$project$ErrorMsg$buildErrorMsg(httpError))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'WebNewAvaliacaoData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var avaliacao = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								turma: A2($author$project$Page$Turma$addAvalicao, model.turma, avaliacao)
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(
+									$author$project$ErrorMsg$buildErrorMsg(httpError))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'WebDenunciaData':
+				var result = msg.a;
+				if (result.$ === 'Ok') {
+					var message = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(message)
+							}),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					var httpError = result.a;
+					return _Utils_Tuple2(
+						_Utils_update(
+							model,
+							{
+								errorMsg: $elm$core$Maybe$Just(
+									$author$project$ErrorMsg$buildErrorMsg(httpError))
+							}),
+						$elm$core$Platform$Cmd$none);
+				}
+			case 'SetComentario':
+				var comentario = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							newAvaliacao: A2($author$project$Page$Turma$updateComentario, model.newAvaliacao, comentario)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'SetPontuacao':
+				var pontuacao = msg.a;
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{
+							newAvaliacao: A2($author$project$Page$Turma$updatePontuacao, model.newAvaliacao, pontuacao)
+						}),
+					$elm$core$Platform$Cmd$none);
+			case 'ClickNewComentario':
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$Turma$newAvaliacaoCmd(model));
+			default:
+				var avaliacaoId = msg.a;
+				return _Utils_Tuple2(
+					model,
+					$author$project$Page$Turma$denunciaCmd(avaliacaoId));
 		}
 	});
 var $author$project$Main$update = F2(
 	function (msg, model) {
 		var _v0 = _Utils_Tuple2(msg, model.page);
-		_v0$6:
+		_v0$4:
 		while (true) {
-			switch (_v0.a.$) {
-				case 'DisciplinasMsg':
-					if (_v0.b.$ === 'Disciplinas') {
-						var subMsg = _v0.a.a;
-						var pageModel = _v0.b.a;
-						var _v1 = A2($author$project$Page$ListDisciplinas$update, subMsg, pageModel);
-						var updatedPageModel = _v1.a;
-						var updatedCmd = _v1.b;
-						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									page: $author$project$Main$Disciplinas(updatedPageModel)
-								}),
-							A2($elm$core$Platform$Cmd$map, $author$project$Main$DisciplinasMsg, updatedCmd));
-					} else {
-						break _v0$6;
-					}
-				case 'HomeMsg':
-					if (_v0.b.$ === 'Home') {
-						var subMsg = _v0.a.a;
-						var pageModel = _v0.b.a;
-						var _v2 = A2($author$project$Page$Home$update, subMsg, pageModel);
-						var updatedPageModel = _v2.a;
-						var updatedCmd = _v2.b;
-						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									page: $author$project$Main$Home(updatedPageModel)
-								}),
-							A2($elm$core$Platform$Cmd$map, $author$project$Main$HomeMsg, updatedCmd));
-					} else {
-						break _v0$6;
-					}
-				case 'PerfilMsg':
-					if (_v0.b.$ === 'Perfil') {
-						var subMsg = _v0.a.a;
-						var pageModel = _v0.b.a;
-						var _v3 = A2($author$project$Page$Perfil$update, subMsg, pageModel);
-						var updatedPageModel = _v3.a;
-						var updatedCmd = _v3.b;
-						return _Utils_Tuple2(
-							_Utils_update(
-								model,
-								{
-									page: $author$project$Main$Perfil(updatedPageModel)
-								}),
-							A2($elm$core$Platform$Cmd$map, $author$project$Main$PerfilMsg, updatedCmd));
-					} else {
-						break _v0$6;
-					}
-				case 'LoginMsg':
-					if (_v0.b.$ === 'Login') {
-						var subMsg = _v0.a.a;
-						var pageModel = _v0.b.a;
-						var _v4 = A2($author$project$Page$Login$update, subMsg, pageModel);
-						var updatedPageModel = _v4.a;
-						var updatedCmd = _v4.b;
-						var _v5 = updatedPageModel.user;
-						if (_v5.$ === 'Just') {
-							var user = _v5.a;
+			_v0$13:
+			while (true) {
+				switch (_v0.a.$) {
+					case 'DisciplinasMsg':
+						if (_v0.b.$ === 'Disciplinas') {
+							var subMsg = _v0.a.a;
+							var pageModel = _v0.b.a;
+							var _v1 = A2($author$project$Page$ListDisciplinas$update, subMsg, pageModel);
+							var updatedPageModel = _v1.a;
+							var updatedCmd = _v1.b;
 							return _Utils_Tuple2(
 								_Utils_update(
 									model,
 									{
-										user: $elm$core$Maybe$Just(user)
+										page: $author$project$Main$Disciplinas(updatedPageModel)
 									}),
-								$elm$core$Platform$Cmd$batch(
-									_List_fromArray(
-										[
-											A2($elm$browser$Browser$Navigation$pushUrl, model.navKey, '/home'),
-											$author$project$Main$sendUserIdToStorage(user)
-										])));
+								A2($elm$core$Platform$Cmd$map, $author$project$Main$DisciplinasMsg, updatedCmd));
 						} else {
+							break _v0$13;
+						}
+					case 'HomeMsg':
+						if (_v0.b.$ === 'Home') {
+							var subMsg = _v0.a.a;
+							var pageModel = _v0.b.a;
+							var _v3 = A2($author$project$Page$Home$update, subMsg, pageModel);
+							var updatedPageModel = _v3.a;
+							var updatedCmd = _v3.b;
 							return _Utils_Tuple2(
 								_Utils_update(
 									model,
 									{
-										page: $author$project$Main$Login(updatedPageModel)
+										page: $author$project$Main$Home(updatedPageModel)
 									}),
-								A2($elm$core$Platform$Cmd$map, $author$project$Main$LoginMsg, updatedCmd));
+								A2($elm$core$Platform$Cmd$map, $author$project$Main$HomeMsg, updatedCmd));
+						} else {
+							break _v0$13;
 						}
-					} else {
-						break _v0$6;
-					}
-				case 'LinkClicked':
-					var urlRequest = _v0.a.a;
-					if (urlRequest.$ === 'Internal') {
-						var url = urlRequest.a;
-						return _Utils_Tuple2(
-							model,
-							A2(
-								$elm$browser$Browser$Navigation$pushUrl,
-								model.navKey,
-								$elm$url$Url$toString(url)));
-					} else {
-						var url = urlRequest.a;
-						return _Utils_Tuple2(
-							model,
-							$elm$browser$Browser$Navigation$load(url));
-					}
-				default:
-					var url = _v0.a.a;
-					var newRoute = $author$project$Route$parseUrl(url);
-					return $author$project$Main$initCurrentPage(
-						_Utils_Tuple2(
-							_Utils_update(
+					case 'PerfilMsg':
+						if (_v0.b.$ === 'Perfil') {
+							switch (_v0.a.a.$) {
+								case 'Loggout':
+									var _v2 = _v0.a.a;
+									var pageModel = _v0.b.a;
+									return _Utils_Tuple2(
+										_Utils_update(
+											model,
+											{user: $elm$core$Maybe$Nothing}),
+										$elm$core$Platform$Cmd$batch(
+											_List_fromArray(
+												[
+													A2($elm$browser$Browser$Navigation$pushUrl, model.navKey, '/login'),
+													$author$project$Main$removeUserIdFromStorage(0)
+												])));
+								case 'WebDeleteUser':
+									if (_v0.a.a.a.$ === 'Ok') {
+										var infoMsg = _v0.a.a.a.a;
+										var pageModel = _v0.b.a;
+										return _Utils_Tuple2(
+											_Utils_update(
+												model,
+												{user: $elm$core$Maybe$Nothing}),
+											$elm$core$Platform$Cmd$batch(
+												_List_fromArray(
+													[
+														A2($elm$browser$Browser$Navigation$pushUrl, model.navKey, '/login'),
+														$author$project$Main$removeUserIdFromStorage(0)
+													])));
+									} else {
+										break _v0$4;
+									}
+								default:
+									break _v0$4;
+							}
+						} else {
+							break _v0$13;
+						}
+					case 'DisciplinaMsg':
+						if (_v0.b.$ === 'Disciplina') {
+							var subMsg = _v0.a.a;
+							var pageModel = _v0.b.a;
+							var _v5 = A2($author$project$Page$Disciplina$update, subMsg, pageModel);
+							var updatedPageModel = _v5.a;
+							var updatedCmd = _v5.b;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										page: $author$project$Main$Disciplina(updatedPageModel)
+									}),
+								A2($elm$core$Platform$Cmd$map, $author$project$Main$DisciplinaMsg, updatedCmd));
+						} else {
+							break _v0$13;
+						}
+					case 'TurmaMsg':
+						if (_v0.b.$ === 'Turma') {
+							var subMsg = _v0.a.a;
+							var pageModel = _v0.b.a;
+							var _v6 = A2($author$project$Page$Turma$update, subMsg, pageModel);
+							var updatedPageModel = _v6.a;
+							var updatedCmd = _v6.b;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										page: $author$project$Main$Turma(updatedPageModel)
+									}),
+								A2($elm$core$Platform$Cmd$map, $author$project$Main$TurmaMsg, updatedCmd));
+						} else {
+							break _v0$13;
+						}
+					case 'ProfessorMsg':
+						if (_v0.b.$ === 'Professor') {
+							var subMsg = _v0.a.a;
+							var pageModel = _v0.b.a;
+							var _v7 = A2($author$project$Page$Professor$update, subMsg, pageModel);
+							var updatedPageModel = _v7.a;
+							var updatedCmd = _v7.b;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										page: $author$project$Main$Professor(updatedPageModel)
+									}),
+								A2($elm$core$Platform$Cmd$map, $author$project$Main$ProfessorMsg, updatedCmd));
+						} else {
+							break _v0$13;
+						}
+					case 'ProfessoresMsg':
+						if (_v0.b.$ === 'Professores') {
+							var subMsg = _v0.a.a;
+							var pageModel = _v0.b.a;
+							var _v8 = A2($author$project$Page$Professores$update, subMsg, pageModel);
+							var updatedPageModel = _v8.a;
+							var updatedCmd = _v8.b;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										page: $author$project$Main$Professores(updatedPageModel)
+									}),
+								A2($elm$core$Platform$Cmd$map, $author$project$Main$ProfessoresMsg, updatedCmd));
+						} else {
+							break _v0$13;
+						}
+					case 'DenunciasMsg':
+						if (_v0.b.$ === 'Denuncias') {
+							var subMsg = _v0.a.a;
+							var pageModel = _v0.b.a;
+							var _v9 = A2($author$project$Page$Denuncias$update, subMsg, pageModel);
+							var updatedPageModel = _v9.a;
+							var updatedCmd = _v9.b;
+							return _Utils_Tuple2(
+								_Utils_update(
+									model,
+									{
+										page: $author$project$Main$Denuncias(updatedPageModel)
+									}),
+								A2($elm$core$Platform$Cmd$map, $author$project$Main$DenunciasMsg, updatedCmd));
+						} else {
+							break _v0$13;
+						}
+					case 'LoginMsg':
+						if (_v0.b.$ === 'Login') {
+							var subMsg = _v0.a.a;
+							var pageModel = _v0.b.a;
+							var _v10 = A2($author$project$Page$Login$update, subMsg, pageModel);
+							var updatedPageModel = _v10.a;
+							var updatedCmd = _v10.b;
+							var _v11 = updatedPageModel.user;
+							if (_v11.$ === 'Just') {
+								var user = _v11.a;
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{
+											user: $elm$core$Maybe$Just(user)
+										}),
+									$elm$core$Platform$Cmd$batch(
+										_List_fromArray(
+											[
+												A2($elm$browser$Browser$Navigation$pushUrl, model.navKey, '/home'),
+												$author$project$Main$sendUserIdToStorage(user)
+											])));
+							} else {
+								return _Utils_Tuple2(
+									_Utils_update(
+										model,
+										{
+											page: $author$project$Main$Login(updatedPageModel)
+										}),
+									A2($elm$core$Platform$Cmd$map, $author$project$Main$LoginMsg, updatedCmd));
+							}
+						} else {
+							break _v0$13;
+						}
+					case 'LinkClicked':
+						var urlRequest = _v0.a.a;
+						if (urlRequest.$ === 'Internal') {
+							var url = urlRequest.a;
+							return _Utils_Tuple2(
 								model,
-								{route: newRoute}),
-							$elm$core$Platform$Cmd$none));
+								A2(
+									$elm$browser$Browser$Navigation$pushUrl,
+									model.navKey,
+									$elm$url$Url$toString(url)));
+						} else {
+							var url = urlRequest.a;
+							return _Utils_Tuple2(
+								model,
+								$elm$browser$Browser$Navigation$load(url));
+						}
+					default:
+						var url = _v0.a.a;
+						var newRoute = $author$project$Route$parseUrl(url);
+						return $author$project$Main$initCurrentPage(
+							_Utils_Tuple2(
+								_Utils_update(
+									model,
+									{route: newRoute}),
+								$elm$core$Platform$Cmd$none));
+				}
 			}
+			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 		}
-		return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+		var subMsg = _v0.a.a;
+		var pageModel = _v0.b.a;
+		var _v4 = A2($author$project$Page$Perfil$update, subMsg, pageModel);
+		var updatedPageModel = _v4.a;
+		var updatedCmd = _v4.b;
+		return _Utils_Tuple2(
+			_Utils_update(
+				model,
+				{
+					page: $author$project$Main$Perfil(updatedPageModel)
+				}),
+			A2($elm$core$Platform$Cmd$map, $author$project$Main$PerfilMsg, updatedCmd));
 	});
 var $elm$virtual_dom$VirtualDom$map = _VirtualDom_map;
 var $elm$html$Html$map = $elm$virtual_dom$VirtualDom$map;
@@ -7100,9 +8410,124 @@ var $author$project$Main$notFoundView = A2(
 		[
 			$elm$html$Html$text('Oops! The page you requested was not found!')
 		]));
-var $elm$html$Html$a = _VirtualDom_node('a');
-var $author$project$Page$Home$disciplinasPath = '/disciplinas/';
 var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$html$Html$ul = _VirtualDom_node('ul');
+var $author$project$Page$Denuncias$RemoverAvaliacao = F2(
+	function (a, b) {
+		return {$: 'RemoverAvaliacao', a: a, b: b};
+	});
+var $author$project$Page$Denuncias$RemoverDenuncia = function (a) {
+	return {$: 'RemoverDenuncia', a: a};
+};
+var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$html$Html$hr = _VirtualDom_node('hr');
+var $elm$virtual_dom$VirtualDom$Normal = function (a) {
+	return {$: 'Normal', a: a};
+};
+var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
+var $elm$html$Html$Events$on = F2(
+	function (event, decoder) {
+		return A2(
+			$elm$virtual_dom$VirtualDom$on,
+			event,
+			$elm$virtual_dom$VirtualDom$Normal(decoder));
+	});
+var $elm$html$Html$Events$onClick = function (msg) {
+	return A2(
+		$elm$html$Html$Events$on,
+		'click',
+		$elm$json$Json$Decode$succeed(msg));
+};
+var $elm$html$Html$p = _VirtualDom_node('p');
+var $author$project$Page$Denuncias$viewDenuncia = function (denuncia) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$hr, _List_Nil, _List_Nil),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Comentario: ' + denuncia.comentario)
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick(
+						A2($author$project$Page$Denuncias$RemoverAvaliacao, denuncia.avaliacaoId, denuncia.id))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Remover Comentario')
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick(
+						$author$project$Page$Denuncias$RemoverDenuncia(denuncia.id))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Manter comentario')
+					]))
+			]));
+};
+var $author$project$Page$Denuncias$viewDenuncias = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Denuncias')
+					])),
+				A2(
+				$elm$html$Html$ul,
+				_List_Nil,
+				A2($elm$core$List$map, $author$project$Page$Denuncias$viewDenuncia, model.denuncias))
+			]));
+};
+var $author$project$Page$Denuncias$viewError = function (model) {
+	var _v0 = model.errorMsg;
+	if (_v0.$ === 'Just') {
+		var message = _v0.a;
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(message)
+						]))
+				]));
+	} else {
+		return A2($elm$html$Html$div, _List_Nil, _List_Nil);
+	}
+};
+var $author$project$Page$Denuncias$view = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$author$project$Page$Denuncias$viewError(model),
+				$author$project$Page$Denuncias$viewDenuncias(model)
+			]));
+};
+var $elm$html$Html$a = _VirtualDom_node('a');
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
 		return A2(
@@ -7116,8 +8541,112 @@ var $elm$html$Html$Attributes$href = function (url) {
 		'href',
 		_VirtualDom_noJavaScriptUri(url));
 };
-var $elm$html$Html$p = _VirtualDom_node('p');
+var $elm$html$Html$li = _VirtualDom_node('li');
+var $author$project$Page$Disciplina$professorUrl = function (id) {
+	return '/professor/' + $elm$core$String$fromInt(id);
+};
+var $author$project$Page$Disciplina$viewProfessor = function (professor) {
+	return A2(
+		$elm$html$Html$li,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$a,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$href(
+						$author$project$Page$Disciplina$professorUrl(professor.id))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text(professor.nome)
+					]))
+			]));
+};
+var $author$project$Page$Disciplina$viewDisciplina = function (disciplina) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(disciplina.nome)
+					])),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Professores:')
+					])),
+				A2(
+				$elm$html$Html$ul,
+				_List_Nil,
+				A2($elm$core$List$map, $author$project$Page$Disciplina$viewProfessor, disciplina.professores))
+			]));
+};
+var $author$project$Page$Disciplina$viewError = function (errorMessage) {
+	var errorHeading = 'Couldn\'t fetch disciplina at this time.';
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(errorHeading)
+					])),
+				$elm$html$Html$text('Error: ' + errorMessage)
+			]));
+};
+var $author$project$Page$Disciplina$viewDisciplinaOrError = function (model) {
+	var _v0 = model.errorMsg;
+	if (_v0.$ === 'Just') {
+		var message = _v0.a;
+		return $author$project$Page$Disciplina$viewError(message);
+	} else {
+		return $author$project$Page$Disciplina$viewDisciplina(model.disciplina);
+	}
+};
+var $author$project$Page$Disciplina$view = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$author$project$Page$Disciplina$viewDisciplinaOrError(model)
+			]));
+};
+var $author$project$Page$Home$disciplinasPath = '/disciplinas/';
 var $author$project$Page$Home$perfilPath = '/perfil/';
+var $author$project$Page$Home$professoresPath = '/professores/';
+var $author$project$Page$Home$denunciasPath = '/denuncias/';
+var $author$project$Page$Home$viewDenuncias = function (model) {
+	return model.isAdmin ? A2(
+		$elm$html$Html$p,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$a,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$href($author$project$Page$Home$denunciasPath)
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Denuncias')
+					]))
+			])) : A2($elm$html$Html$div, _List_Nil, _List_Nil);
+};
 var $author$project$Page$Home$view = function (model) {
 	return A2(
 		$elm$html$Html$div,
@@ -7161,25 +8690,53 @@ var $author$project$Page$Home$view = function (model) {
 								$elm$html$Html$a,
 								_List_fromArray(
 									[
+										$elm$html$Html$Attributes$href($author$project$Page$Home$professoresPath)
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Professores')
+									]))
+							])),
+						A2(
+						$elm$html$Html$p,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$a,
+								_List_fromArray(
+									[
 										$elm$html$Html$Attributes$href($author$project$Page$Home$perfilPath)
 									]),
 								_List_fromArray(
 									[
 										$elm$html$Html$text('User')
 									]))
-							]))
+							])),
+						$author$project$Page$Home$viewDenuncias(model)
 					]))
 			]));
 };
-var $elm$html$Html$ul = _VirtualDom_node('ul');
-var $elm$html$Html$li = _VirtualDom_node('li');
+var $author$project$Page$ListDisciplinas$disciplinaUrl = function (id) {
+	return '/disciplina/' + $elm$core$String$fromInt(id);
+};
 var $author$project$Page$ListDisciplinas$viewDisciplina = function (disciplina) {
 	return A2(
 		$elm$html$Html$li,
 		_List_Nil,
 		_List_fromArray(
 			[
-				$elm$html$Html$text(disciplina.nome)
+				A2(
+				$elm$html$Html$a,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$href(
+						$author$project$Page$ListDisciplinas$disciplinaUrl(disciplina.id))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text(disciplina.nome)
+					]))
 			]));
 };
 var $author$project$Page$ListDisciplinas$viewDisciplinas = function (disciplinas) {
@@ -7237,34 +8794,32 @@ var $author$project$Page$ListDisciplinas$view = function (model) {
 			]));
 };
 var $author$project$Page$Login$ClickLogin = {$: 'ClickLogin'};
-var $author$project$Page$Login$SetEmail = function (a) {
-	return {$: 'SetEmail', a: a};
+var $author$project$Page$Login$ClickRegister = {$: 'ClickRegister'};
+var $author$project$Page$Login$LoginSetEmail = function (a) {
+	return {$: 'LoginSetEmail', a: a};
 };
-var $author$project$Page$Login$SetPassword = function (a) {
-	return {$: 'SetPassword', a: a};
+var $author$project$Page$Login$LoginSetPassword = function (a) {
+	return {$: 'LoginSetPassword', a: a};
 };
-var $elm$html$Html$button = _VirtualDom_node('button');
+var $author$project$Page$Login$RegisterSetCurso = function (a) {
+	return {$: 'RegisterSetCurso', a: a};
+};
+var $author$project$Page$Login$RegisterSetEmail = function (a) {
+	return {$: 'RegisterSetEmail', a: a};
+};
+var $author$project$Page$Login$RegisterSetMatricula = function (a) {
+	return {$: 'RegisterSetMatricula', a: a};
+};
+var $author$project$Page$Login$RegisterSetNome = function (a) {
+	return {$: 'RegisterSetNome', a: a};
+};
+var $author$project$Page$Login$RegisterSetPassword = function (a) {
+	return {$: 'RegisterSetPassword', a: a};
+};
 var $elm$html$Html$Attributes$for = $elm$html$Html$Attributes$stringProperty('htmlFor');
 var $elm$html$Html$Attributes$id = $elm$html$Html$Attributes$stringProperty('id');
 var $elm$html$Html$input = _VirtualDom_node('input');
 var $elm$html$Html$label = _VirtualDom_node('label');
-var $elm$virtual_dom$VirtualDom$Normal = function (a) {
-	return {$: 'Normal', a: a};
-};
-var $elm$virtual_dom$VirtualDom$on = _VirtualDom_on;
-var $elm$html$Html$Events$on = F2(
-	function (event, decoder) {
-		return A2(
-			$elm$virtual_dom$VirtualDom$on,
-			event,
-			$elm$virtual_dom$VirtualDom$Normal(decoder));
-	});
-var $elm$html$Html$Events$onClick = function (msg) {
-	return A2(
-		$elm$html$Html$Events$on,
-		'click',
-		$elm$json$Json$Decode$succeed(msg));
-};
 var $elm$html$Html$Events$alwaysStop = function (x) {
 	return _Utils_Tuple2(x, true);
 };
@@ -7298,6 +8853,7 @@ var $elm$html$Html$Events$onInput = function (tagger) {
 };
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
+var $elm$html$Html$h4 = _VirtualDom_node('h4');
 var $author$project$Page$Login$viewError = function (errorMessage) {
 	if (errorMessage.$ === 'Nothing') {
 		return A2($elm$html$Html$div, _List_Nil, _List_Nil);
@@ -7309,13 +8865,12 @@ var $author$project$Page$Login$viewError = function (errorMessage) {
 			_List_fromArray(
 				[
 					A2(
-					$elm$html$Html$h3,
+					$elm$html$Html$h4,
 					_List_Nil,
 					_List_fromArray(
 						[
-							$elm$html$Html$text('Fail to login')
-						])),
-					$elm$html$Html$text('Error: ' + msg)
+							$elm$html$Html$text('Error: ' + msg)
+						]))
 				]));
 	}
 };
@@ -7326,79 +8881,245 @@ var $author$project$Page$Login$view = function (model) {
 		_List_fromArray(
 			[
 				A2(
-				$elm$html$Html$h3,
-				_List_Nil,
-				_List_fromArray(
-					[
-						$elm$html$Html$text('Página Login')
-					])),
-				$author$project$Page$Login$viewError(model.errorMsg),
-				A2(
 				$elm$html$Html$div,
 				_List_Nil,
 				_List_fromArray(
 					[
 						A2(
-						$elm$html$Html$label,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$for('email')
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Email:')
-							])),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$id('email'),
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$value(model.email),
-								$elm$html$Html$Events$onInput($author$project$Page$Login$SetEmail)
-							]),
-						_List_Nil)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$label,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$for('password')
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Password:')
-							])),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$id('password'),
-								$elm$html$Html$Attributes$type_('password'),
-								$elm$html$Html$Attributes$value(model.password),
-								$elm$html$Html$Events$onInput($author$project$Page$Login$SetPassword)
-							]),
-						_List_Nil)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick($author$project$Page$Login$ClickLogin)
-							]),
+						$elm$html$Html$h3,
+						_List_Nil,
 						_List_fromArray(
 							[
 								$elm$html$Html$text('Login')
+							])),
+						$author$project$Page$Login$viewError(model.loginErrorMsg),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$for('email')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Email:')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$id('email'),
+										$elm$html$Html$Attributes$type_('text'),
+										$elm$html$Html$Attributes$value(model.loginUser.email),
+										$elm$html$Html$Events$onInput($author$project$Page$Login$LoginSetEmail)
+									]),
+								_List_Nil)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$for('password')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Password:')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$id('password'),
+										$elm$html$Html$Attributes$type_('password'),
+										$elm$html$Html$Attributes$value(model.loginUser.password),
+										$elm$html$Html$Events$onInput($author$project$Page$Login$LoginSetPassword)
+									]),
+								_List_Nil)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$button,
+								_List_fromArray(
+									[
+										$elm$html$Html$Events$onClick($author$project$Page$Login$ClickLogin)
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Login')
+									]))
+							]))
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$h3,
+						_List_Nil,
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Register')
+							])),
+						$author$project$Page$Login$viewError(model.registerErrorMsg),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$for('email')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Email:')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$id('email'),
+										$elm$html$Html$Attributes$type_('text'),
+										$elm$html$Html$Attributes$value(model.registerUser.email),
+										$elm$html$Html$Events$onInput($author$project$Page$Login$RegisterSetEmail)
+									]),
+								_List_Nil)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$for('nome')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Nome:')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$id('nome'),
+										$elm$html$Html$Attributes$type_('text'),
+										$elm$html$Html$Attributes$value(model.registerUser.nome),
+										$elm$html$Html$Events$onInput($author$project$Page$Login$RegisterSetNome)
+									]),
+								_List_Nil)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$for('matricula')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Matricula:')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$id('matricula'),
+										$elm$html$Html$Attributes$type_('text'),
+										$elm$html$Html$Attributes$value(model.registerUser.matricula),
+										$elm$html$Html$Events$onInput($author$project$Page$Login$RegisterSetMatricula)
+									]),
+								_List_Nil)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$for('curso')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Curso:')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$id('curso'),
+										$elm$html$Html$Attributes$type_('text'),
+										$elm$html$Html$Attributes$value(model.registerUser.curso),
+										$elm$html$Html$Events$onInput($author$project$Page$Login$RegisterSetCurso)
+									]),
+								_List_Nil)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$label,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$for('password')
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Password:')
+									])),
+								A2(
+								$elm$html$Html$input,
+								_List_fromArray(
+									[
+										$elm$html$Html$Attributes$id('password'),
+										$elm$html$Html$Attributes$type_('password'),
+										$elm$html$Html$Attributes$value(model.registerUser.password),
+										$elm$html$Html$Events$onInput($author$project$Page$Login$RegisterSetPassword)
+									]),
+								_List_Nil)
+							])),
+						A2(
+						$elm$html$Html$div,
+						_List_Nil,
+						_List_fromArray(
+							[
+								A2(
+								$elm$html$Html$button,
+								_List_fromArray(
+									[
+										$elm$html$Html$Events$onClick($author$project$Page$Login$ClickRegister)
+									]),
+								_List_fromArray(
+									[
+										$elm$html$Html$text('Login')
+									]))
 							]))
 					]))
 			]));
@@ -7428,98 +9149,114 @@ var $author$project$Page$Perfil$SetCurrentPassword = function (a) {
 var $author$project$Page$Perfil$SetNewPassword = function (a) {
 	return {$: 'SetNewPassword', a: a};
 };
-var $author$project$Page$Perfil$viewUpdatePassword = function (passwordInfo) {
-	return A2(
-		$elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$label,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$for('currentPassord')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text('Current Password:')
-									])),
-								A2(
-								$elm$html$Html$input,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$id('currentPassword'),
-										$elm$html$Html$Attributes$type_('password'),
-										$elm$html$Html$Attributes$value(passwordInfo.currentPassword),
-										$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetCurrentPassword)
-									]),
-								_List_Nil)
-							])),
-						A2(
-						$elm$html$Html$div,
-						_List_Nil,
-						_List_fromArray(
-							[
-								A2(
-								$elm$html$Html$label,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$for('newPassword')
-									]),
-								_List_fromArray(
-									[
-										$elm$html$Html$text('New Password:')
-									])),
-								A2(
-								$elm$html$Html$input,
-								_List_fromArray(
-									[
-										$elm$html$Html$Attributes$id('newPassword'),
-										$elm$html$Html$Attributes$type_('password'),
-										$elm$html$Html$Attributes$value(passwordInfo.newPassword),
-										$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetNewPassword)
-									]),
-								_List_Nil)
-							]))
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickCancel)
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Cancel')
-							])),
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickSendPasswordUpdate)
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Update Password')
-							]))
-					]))
-			]));
+var $author$project$Page$Perfil$viewInfoMsg = function (infoMsg) {
+	if (infoMsg.$ === 'Just') {
+		var msg = infoMsg.a;
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$elm$html$Html$text(msg)
+				]));
+	} else {
+		return A2($elm$html$Html$div, _List_Nil, _List_Nil);
+	}
 };
+var $author$project$Page$Perfil$viewUpdatePassword = F2(
+	function (passwordInfo, infoMsg) {
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$author$project$Page$Perfil$viewInfoMsg(infoMsg),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$div,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$label,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$for('currentPassord')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('Current Password:')
+										])),
+									A2(
+									$elm$html$Html$input,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$id('currentPassword'),
+											$elm$html$Html$Attributes$type_('password'),
+											$elm$html$Html$Attributes$value(passwordInfo.currentPassword),
+											$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetCurrentPassword)
+										]),
+									_List_Nil)
+								])),
+							A2(
+							$elm$html$Html$div,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$label,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$for('newPassword')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('New Password:')
+										])),
+									A2(
+									$elm$html$Html$input,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$id('newPassword'),
+											$elm$html$Html$Attributes$type_('password'),
+											$elm$html$Html$Attributes$value(passwordInfo.newPassword),
+											$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetNewPassword)
+										]),
+									_List_Nil)
+								]))
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickCancel)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Cancel')
+								])),
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickSendPasswordUpdate)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Update Password')
+								]))
+						]))
+				]));
+	});
 var $author$project$Page$Perfil$ClickSendUserUpdate = {$: 'ClickSendUserUpdate'};
 var $author$project$Page$Perfil$SetCurso = function (a) {
 	return {$: 'SetCurso', a: a};
@@ -7533,214 +9270,262 @@ var $author$project$Page$Perfil$SetMatricula = function (a) {
 var $author$project$Page$Perfil$SetNome = function (a) {
 	return {$: 'SetNome', a: a};
 };
-var $author$project$Page$Perfil$viewUpdateUser = function (user) {
-	return A2(
-		$elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$label,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$for('nome')
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Nome:')
-							])),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$id('nome'),
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$value(user.nome),
-								$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetNome)
-							]),
-						_List_Nil)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$label,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$for('email')
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Email:')
-							])),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$id('email'),
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$value(user.email),
-								$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetEmail)
-							]),
-						_List_Nil)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$label,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$for('matricula')
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Matricula:')
-							])),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$id('matricula'),
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$value(user.matricula),
-								$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetMatricula)
-							]),
-						_List_Nil)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$label,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$for('curso')
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Curso:')
-							])),
-						A2(
-						$elm$html$Html$input,
-						_List_fromArray(
-							[
-								$elm$html$Html$Attributes$id('curso'),
-								$elm$html$Html$Attributes$type_('text'),
-								$elm$html$Html$Attributes$value(user.curso),
-								$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetCurso)
-							]),
-						_List_Nil)
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickCancel)
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Cancel')
-							])),
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickSendUserUpdate)
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Update')
-							]))
-					]))
-			]));
-};
+var $author$project$Page$Perfil$viewUpdateUser = F2(
+	function (user, infoMsg) {
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					$author$project$Page$Perfil$viewInfoMsg(infoMsg),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$label,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$for('nome')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Nome:')
+								])),
+							A2(
+							$elm$html$Html$input,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$id('nome'),
+									$elm$html$Html$Attributes$type_('text'),
+									$elm$html$Html$Attributes$value(user.nome),
+									$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetNome)
+								]),
+							_List_Nil)
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$label,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$for('email')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Email:')
+								])),
+							A2(
+							$elm$html$Html$input,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$id('email'),
+									$elm$html$Html$Attributes$type_('text'),
+									$elm$html$Html$Attributes$value(user.email),
+									$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetEmail)
+								]),
+							_List_Nil)
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$label,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$for('matricula')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Matricula:')
+								])),
+							A2(
+							$elm$html$Html$input,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$id('matricula'),
+									$elm$html$Html$Attributes$type_('text'),
+									$elm$html$Html$Attributes$value(user.matricula),
+									$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetMatricula)
+								]),
+							_List_Nil)
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$label,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$for('curso')
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Curso:')
+								])),
+							A2(
+							$elm$html$Html$input,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$id('curso'),
+									$elm$html$Html$Attributes$type_('text'),
+									$elm$html$Html$Attributes$value(user.curso),
+									$elm$html$Html$Events$onInput($author$project$Page$Perfil$SetCurso)
+								]),
+							_List_Nil)
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickCancel)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Cancel')
+								])),
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickSendUserUpdate)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Update')
+								]))
+						]))
+				]));
+	});
+var $author$project$Page$Perfil$ClickDeleteUser = {$: 'ClickDeleteUser'};
 var $author$project$Page$Perfil$ClickUpdatePassword = {$: 'ClickUpdatePassword'};
 var $author$project$Page$Perfil$ClickUpdateUser = {$: 'ClickUpdateUser'};
-var $author$project$Page$Perfil$viewUserInfo = function (user) {
-	return A2(
-		$elm$html$Html$div,
-		_List_Nil,
-		_List_fromArray(
-			[
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$p,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Nome: ' + user.nome)
-							])),
-						A2(
-						$elm$html$Html$p,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Email: ' + user.email)
-							])),
-						A2(
-						$elm$html$Html$p,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Matricula: ' + user.matricula)
-							])),
-						A2(
-						$elm$html$Html$p,
-						_List_Nil,
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Curso: ' + user.curso)
-							]))
-					])),
-				A2(
-				$elm$html$Html$div,
-				_List_Nil,
-				_List_fromArray(
-					[
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickUpdateUser)
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Update')
-							])),
-						A2(
-						$elm$html$Html$button,
-						_List_fromArray(
-							[
-								$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickUpdatePassword)
-							]),
-						_List_fromArray(
-							[
-								$elm$html$Html$text('Update Password')
-							]))
-					]))
-			]));
-};
+var $author$project$Page$Perfil$Loggout = {$: 'Loggout'};
+var $author$project$Page$Perfil$viewUserInfo = F2(
+	function (user, infoMsg) {
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$author$project$Page$Perfil$viewInfoMsg(infoMsg),
+							A2(
+							$elm$html$Html$p,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Nome: ' + user.nome)
+								])),
+							A2(
+							$elm$html$Html$p,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Email: ' + user.email)
+								])),
+							A2(
+							$elm$html$Html$p,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Matricula: ' + user.matricula)
+								])),
+							A2(
+							$elm$html$Html$p,
+							_List_Nil,
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Curso: ' + user.curso)
+								]))
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickUpdateUser)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Update')
+								])),
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickUpdatePassword)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Update Password')
+								])),
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Perfil$Loggout)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Loggout')
+								])),
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Events$onClick($author$project$Page$Perfil$ClickDeleteUser)
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Delete User')
+								]))
+						])),
+					A2(
+					$elm$html$Html$div,
+					_List_Nil,
+					_List_fromArray(
+						[
+							A2(
+							$elm$html$Html$p,
+							_List_Nil,
+							_List_fromArray(
+								[
+									A2(
+									$elm$html$Html$a,
+									_List_fromArray(
+										[
+											$elm$html$Html$Attributes$href('/home/')
+										]),
+									_List_fromArray(
+										[
+											$elm$html$Html$text('Home')
+										]))
+								]))
+						]))
+				]));
+	});
 var $author$project$Page$Perfil$viewUser = function (model) {
 	var _v0 = model.user;
 	if (_v0.$ === 'Just') {
@@ -7748,11 +9533,11 @@ var $author$project$Page$Perfil$viewUser = function (model) {
 		var _v1 = model.state;
 		switch (_v1.$) {
 			case 'Showing':
-				return $author$project$Page$Perfil$viewUserInfo(user);
+				return A2($author$project$Page$Perfil$viewUserInfo, user, model.infoMsg);
 			case 'UpdatingUser':
-				return $author$project$Page$Perfil$viewUpdateUser(model.updatingUser);
+				return A2($author$project$Page$Perfil$viewUpdateUser, model.updatingUser, model.infoMsg);
 			default:
-				return $author$project$Page$Perfil$viewUpdatePassword(model.passwordInfo);
+				return A2($author$project$Page$Perfil$viewUpdatePassword, model.passwordInfo, model.infoMsg);
 		}
 	} else {
 		return A2($elm$html$Html$div, _List_Nil, _List_Nil);
@@ -7774,6 +9559,578 @@ var $author$project$Page$Perfil$view = function (model) {
 		_List_fromArray(
 			[
 				$author$project$Page$Perfil$viewUserOrError(model)
+			]));
+};
+var $author$project$Page$Professor$viewError = function (errorMessage) {
+	var errorHeading = 'Couldn\'t fetch disciplina at this time.';
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(errorHeading)
+					])),
+				$elm$html$Html$text('Error: ' + errorMessage)
+			]));
+};
+var $author$project$Page$Professor$ClickNewComentario = {$: 'ClickNewComentario'};
+var $author$project$Page$Professor$SetComentario = function (a) {
+	return {$: 'SetComentario', a: a};
+};
+var $author$project$Page$Professor$SetPontuacao = function (a) {
+	return {$: 'SetPontuacao', a: a};
+};
+var $elm$html$Html$Attributes$size = function (n) {
+	return A2(
+		_VirtualDom_attribute,
+		'size',
+		$elm$core$String$fromInt(n));
+};
+var $author$project$Page$Professor$viewAddAvaliacao = function (avaliacao) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Adicione uma nova avaliação')
+					])),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Sua pontuacao será computada modulo 6')
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$label,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$for('comentario')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Comentario:')
+							])),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$id('comentario'),
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$size(100),
+								$elm$html$Html$Attributes$value(avaliacao.comentario),
+								$elm$html$Html$Events$onInput($author$project$Page$Professor$SetComentario)
+							]),
+						_List_Nil)
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$label,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$for('pontuacao')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Pontuacao:')
+							])),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$id('pontuacao'),
+								$elm$html$Html$Attributes$type_('number'),
+								$elm$html$Html$Attributes$value(
+								$elm$core$String$fromInt(avaliacao.pontuacao)),
+								$elm$html$Html$Events$onInput($author$project$Page$Professor$SetPontuacao)
+							]),
+						_List_Nil)
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick($author$project$Page$Professor$ClickNewComentario)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Comentar')
+							]))
+					]))
+			]));
+};
+var $author$project$Page$Professor$viewAvaliacao = function (avaliacao) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$hr, _List_Nil, _List_Nil),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Username: ' + avaliacao.userNome)
+					])),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Comentario: ' + avaliacao.comentario)
+					])),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						'Pontuacao: ' + $elm$core$String$fromInt(avaliacao.pontuacao))
+					]))
+			]));
+};
+var $author$project$Page$Professor$turmaUrl = function (id) {
+	return '/turma/' + $elm$core$String$fromInt(id);
+};
+var $author$project$Page$Professor$viewTurma = function (turma) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$hr, _List_Nil, _List_Nil),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$a,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$href(
+								$author$project$Page$Professor$turmaUrl(turma.id))
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text(turma.nome)
+							]))
+					])),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Turma: ' + turma.numero)
+					]))
+			]));
+};
+var $author$project$Page$Professor$viewProfessor = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Nome: ' + model.professor.nome)
+					])),
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						'Nota: ' + $elm$core$String$fromInt((model.professor.sumAvaliacoes / model.professor.qtdAvaliacoes) | 0))
+					])),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Turmas:')
+					])),
+				A2(
+				$elm$html$Html$ul,
+				_List_Nil,
+				A2($elm$core$List$map, $author$project$Page$Professor$viewTurma, model.professor.turmas)),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Comentarios:')
+					])),
+				A2(
+				$elm$html$Html$ul,
+				_List_Nil,
+				A2($elm$core$List$map, $author$project$Page$Professor$viewAvaliacao, model.professor.avaliacoes)),
+				$author$project$Page$Professor$viewAddAvaliacao(model.newAvaliacao)
+			]));
+};
+var $author$project$Page$Professor$viewProfessorOrError = function (model) {
+	var _v0 = model.errorMsg;
+	if (_v0.$ === 'Just') {
+		var message = _v0.a;
+		return $author$project$Page$Professor$viewError(message);
+	} else {
+		return $author$project$Page$Professor$viewProfessor(model);
+	}
+};
+var $author$project$Page$Professor$view = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$author$project$Page$Professor$viewProfessorOrError(model)
+			]));
+};
+var $author$project$Page$Professores$viewError = function (errorMessage) {
+	var errorHeading = 'Couldn\'t fetch professores at this time.';
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(errorHeading)
+					])),
+				$elm$html$Html$text('Error: ' + errorMessage)
+			]));
+};
+var $author$project$Page$Professores$professorUrl = function (id) {
+	return '/professor/' + $elm$core$String$fromInt(id);
+};
+var $author$project$Page$Professores$viewDisciplina = function (disciplina) {
+	return A2(
+		$elm$html$Html$li,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(disciplina)
+					]))
+			]));
+};
+var $author$project$Page$Professores$viewProfessor = function (professor) {
+	return A2(
+		$elm$html$Html$li,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$a,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$href(
+						$author$project$Page$Professores$professorUrl(professor.id))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text(professor.nome)
+					])),
+				A2(
+				$elm$html$Html$ul,
+				_List_Nil,
+				A2($elm$core$List$map, $author$project$Page$Professores$viewDisciplina, professor.disciplinas))
+			]));
+};
+var $author$project$Page$Professores$viewProfessores = function (professores) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Professores:')
+					])),
+				A2(
+				$elm$html$Html$ul,
+				_List_Nil,
+				A2($elm$core$List$map, $author$project$Page$Professores$viewProfessor, professores))
+			]));
+};
+var $author$project$Page$Professores$viewProfessorOrError = function (model) {
+	var _v0 = model.errorMsg;
+	if (_v0.$ === 'Just') {
+		var message = _v0.a;
+		return $author$project$Page$Professores$viewError(message);
+	} else {
+		return $author$project$Page$Professores$viewProfessores(model.professores);
+	}
+};
+var $author$project$Page$Professores$view = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$author$project$Page$Professores$viewProfessorOrError(model)
+			]));
+};
+var $author$project$Page$Turma$viewError = function (model) {
+	var _v0 = model.errorMsg;
+	if (_v0.$ === 'Just') {
+		var message = _v0.a;
+		return A2(
+			$elm$html$Html$div,
+			_List_Nil,
+			_List_fromArray(
+				[
+					A2(
+					$elm$html$Html$p,
+					_List_Nil,
+					_List_fromArray(
+						[
+							$elm$html$Html$text(message)
+						]))
+				]));
+	} else {
+		return A2($elm$html$Html$div, _List_Nil, _List_Nil);
+	}
+};
+var $author$project$Page$Turma$ClickNewComentario = {$: 'ClickNewComentario'};
+var $author$project$Page$Turma$SetComentario = function (a) {
+	return {$: 'SetComentario', a: a};
+};
+var $author$project$Page$Turma$SetPontuacao = function (a) {
+	return {$: 'SetPontuacao', a: a};
+};
+var $author$project$Page$Turma$viewAddAvaliacao = function (avaliacao) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Adicione uma nova avaliação')
+					])),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Sua pontuacao será computada modulo 6')
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$label,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$for('comentario')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Comentario:')
+							])),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$id('comentario'),
+								$elm$html$Html$Attributes$type_('text'),
+								$elm$html$Html$Attributes$size(100),
+								$elm$html$Html$Attributes$value(avaliacao.comentario),
+								$elm$html$Html$Events$onInput($author$project$Page$Turma$SetComentario)
+							]),
+						_List_Nil)
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$label,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$for('pontuacao')
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Pontuacao:')
+							])),
+						A2(
+						$elm$html$Html$input,
+						_List_fromArray(
+							[
+								$elm$html$Html$Attributes$id('pontuacao'),
+								$elm$html$Html$Attributes$type_('number'),
+								$elm$html$Html$Attributes$value(
+								$elm$core$String$fromInt(avaliacao.pontuacao)),
+								$elm$html$Html$Events$onInput($author$project$Page$Turma$SetPontuacao)
+							]),
+						_List_Nil)
+					])),
+				A2(
+				$elm$html$Html$div,
+				_List_Nil,
+				_List_fromArray(
+					[
+						A2(
+						$elm$html$Html$button,
+						_List_fromArray(
+							[
+								$elm$html$Html$Events$onClick($author$project$Page$Turma$ClickNewComentario)
+							]),
+						_List_fromArray(
+							[
+								$elm$html$Html$text('Comentar')
+							]))
+					]))
+			]));
+};
+var $author$project$Page$Turma$Denuncia = function (a) {
+	return {$: 'Denuncia', a: a};
+};
+var $author$project$Page$Turma$viewAvaliacao = function (avaliacao) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2($elm$html$Html$hr, _List_Nil, _List_Nil),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Username: ' + avaliacao.userNome)
+					])),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Comentario: ' + avaliacao.comentario)
+					])),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						'Pontuacao: ' + $elm$core$String$fromInt(avaliacao.pontuacao))
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick(
+						$author$project$Page$Turma$Denuncia(avaliacao.id))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Denuncia')
+					]))
+			]));
+};
+var $author$project$Page$Turma$viewTurma = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Disciplina: ' + model.turma.disciplinaNome)
+					])),
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Professor: ' + model.turma.professorNome)
+					])),
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Turma: ' + model.turma.numero)
+					])),
+				A2(
+				$elm$html$Html$h3,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						'Nota: ' + $elm$core$String$fromInt((model.turma.sumAvaliacoes / model.turma.qtdAvaliacoes) | 0))
+					])),
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Comentarios:')
+					])),
+				A2(
+				$elm$html$Html$ul,
+				_List_Nil,
+				A2($elm$core$List$map, $author$project$Page$Turma$viewAvaliacao, model.turma.avaliacoes)),
+				$author$project$Page$Turma$viewAddAvaliacao(model.newAvaliacao)
+			]));
+};
+var $author$project$Page$Turma$view = function (model) {
+	return A2(
+		$elm$html$Html$div,
+		_List_Nil,
+		_List_fromArray(
+			[
+				$author$project$Page$Turma$viewError(model),
+				$author$project$Page$Turma$viewTurma(model)
 			]));
 };
 var $author$project$Main$currentView = function (model) {
@@ -7799,12 +10156,42 @@ var $author$project$Main$currentView = function (model) {
 				$elm$html$Html$map,
 				$author$project$Main$LoginMsg,
 				$author$project$Page$Login$view(pageModel));
-		default:
+		case 'Perfil':
 			var pageModel = _v0.a;
 			return A2(
 				$elm$html$Html$map,
 				$author$project$Main$PerfilMsg,
 				$author$project$Page$Perfil$view(pageModel));
+		case 'Disciplina':
+			var pageModel = _v0.a;
+			return A2(
+				$elm$html$Html$map,
+				$author$project$Main$DisciplinaMsg,
+				$author$project$Page$Disciplina$view(pageModel));
+		case 'Professores':
+			var pageModel = _v0.a;
+			return A2(
+				$elm$html$Html$map,
+				$author$project$Main$ProfessoresMsg,
+				$author$project$Page$Professores$view(pageModel));
+		case 'Turma':
+			var pageModel = _v0.a;
+			return A2(
+				$elm$html$Html$map,
+				$author$project$Main$TurmaMsg,
+				$author$project$Page$Turma$view(pageModel));
+		case 'Professor':
+			var pageModel = _v0.a;
+			return A2(
+				$elm$html$Html$map,
+				$author$project$Main$ProfessorMsg,
+				$author$project$Page$Professor$view(pageModel));
+		default:
+			var pageModel = _v0.a;
+			return A2(
+				$elm$html$Html$map,
+				$author$project$Main$DenunciasMsg,
+				$author$project$Page$Denuncias$view(pageModel));
 	}
 };
 var $author$project$Main$view = function (model) {
@@ -7832,5 +10219,19 @@ _Platform_export({'Main':{'init':$author$project$Main$main(
 		_List_fromArray(
 			[
 				$elm$json$Json$Decode$null($elm$core$Maybe$Nothing),
-				A2($elm$json$Json$Decode$map, $elm$core$Maybe$Just, $elm$json$Json$Decode$int)
+				A2(
+				$elm$json$Json$Decode$map,
+				$elm$core$Maybe$Just,
+				A2(
+					$elm$json$Json$Decode$andThen,
+					function (_v0) {
+						return A2(
+							$elm$json$Json$Decode$andThen,
+							function (_v1) {
+								return $elm$json$Json$Decode$succeed(
+									_Utils_Tuple2(_v0, _v1));
+							},
+							A2($elm$json$Json$Decode$index, 1, $elm$json$Json$Decode$bool));
+					},
+					A2($elm$json$Json$Decode$index, 0, $elm$json$Json$Decode$int)))
 			])))(0)}});}(this));

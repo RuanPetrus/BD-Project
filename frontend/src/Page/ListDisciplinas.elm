@@ -2,10 +2,12 @@ module Page.ListDisciplinas exposing (Model, Msg, view, init, update)
 
 import Browser
 import Html exposing (..)
+import Html.Attributes exposing (..)
 import Http
-import Json.Decode exposing (Decoder)
-import Json.Decode as JDE
 import ErrorMsg exposing ( buildErrorMsg )
+
+import Json.Decode as Decode exposing (..)
+import Json.Encode as Encode exposing (..)
 
 type Msg
     = WebData ( Result Http.Error ( List DisciplinaItem ) )
@@ -34,9 +36,14 @@ viewDisciplinas disciplinas =
         , ul [] (List.map viewDisciplina disciplinas)
         ]
 
+
+disciplinaUrl : Int -> String
+disciplinaUrl id =
+    "/disciplina/" ++ ( String.fromInt id ) 
+
 viewDisciplina : DisciplinaItem -> Html Msg
 viewDisciplina disciplina =
-    li [] [ text disciplina.nome ]
+    li [] [ a [ href ( disciplinaUrl disciplina.id ) ] [ text disciplina.nome ] ]
 
 viewError : String -> Html Msg
 viewError errorMessage =
@@ -92,10 +99,10 @@ getDisciplinaList =
 
 disciplinaListDecoder : Decoder (List DisciplinaItem)
 disciplinaListDecoder =
-    JDE.list disciplinaItemDecoder
+    Decode.list disciplinaItemDecoder
 
 disciplinaItemDecoder : Decoder DisciplinaItem
 disciplinaItemDecoder =
-    JDE.map2 DisciplinaItem
-        (JDE.field "id" JDE.int)
-        (JDE.field "nome" JDE.string)
+    Decode.map2 DisciplinaItem
+        (Decode.field "id" Decode.int)
+        (Decode.field "nome" Decode.string)

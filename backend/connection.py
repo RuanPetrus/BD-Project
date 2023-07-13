@@ -9,10 +9,6 @@ class Database:
     password: str
     user: str
 
-    @staticmethod
-    def config_db():
-        pass
-
 async def get_db():
     async with await psycopg.AsyncConnection.connect(
             f"""

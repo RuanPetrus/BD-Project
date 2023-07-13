@@ -1,4 +1,4 @@
-module Page.Perfil exposing (Model, Msg, view, init, update)
+module Page.Perfil exposing (Model, Msg(..), view, init, update)
 
 import Browser
 import Html exposing (..)
@@ -11,7 +11,9 @@ import Json.Decode as Decode exposing (..)
 import Json.Encode as Encode exposing (..)
 
 type Msg
-    = WebData ( Result Http.Error ( User ) )
+    = WebUserData ( Result Http.Error ( User ) )
+    | WebUpdateUserData ( Result Http.Error ( User ) )
+    | WebPasswordData ( Result Http.Error ( String ) )
     | SetNome String
     | SetEmail String
     | SetMatricula String
@@ -23,6 +25,9 @@ type Msg
     | ClickCancel
     | ClickSendUserUpdate
     | ClickSendPasswordUpdate
+    | ClickDeleteUser
+    | Loggout
+    | WebDeleteUser ( Result Http.Error ( String ) )
 
 type PerfilState
     = Showing
@@ -40,6 +45,7 @@ type alias Model =
     { user: Maybe User
     , updatingUser: User
     , errorMsg : Maybe String
+    , infoMsg : Maybe String
     , state : PerfilState
     , userId: Int
     , passwordInfo : PasswordInfo
@@ -110,20 +116,30 @@ viewUser model =
         Just user ->
             case model.state of
                 Showing -> 
-                    viewUserInfo user
+                    viewUserInfo user model.infoMsg
                 UpdatingUser ->
-                    viewUpdateUser model.updatingUser
+                    viewUpdateUser model.updatingUser model.infoMsg
                 UpdatingPassword ->
-                    viewUpdatePassword model.passwordInfo
+                    viewUpdatePassword model.passwordInfo model.infoMsg
                     
         Nothing ->
             div [] []
 
-viewUserInfo : User -> Html Msg
-viewUserInfo user =
+viewInfoMsg : Maybe String -> Html Msg
+viewInfoMsg infoMsg =
+    case infoMsg of
+        Just msg ->
+            div [] [ text msg ]
+        Nothing ->
+            div [] []
+            
+
+viewUserInfo : User -> Maybe String -> Html Msg
+viewUserInfo user infoMsg =
     div []
         [ div []
-            [ p []  [ text ("Nome: " ++ user.nome)]
+            [ viewInfoMsg infoMsg
+            , p []  [ text ("Nome: " ++ user.nome)]
             , p []  [ text ("Email: " ++ user.email)]
             , p []  [ text ("Matricula: " ++ user.matricula)]
             , p []  [ text ("Curso: " ++ user.curso)]
@@ -131,13 +147,19 @@ viewUserInfo user =
         , div []
             [ button [ onClick ClickUpdateUser ] [ text "Update" ]
             , button [ onClick ClickUpdatePassword ] [ text "Update Password" ]
+            , button [ onClick Loggout ] [ text "Loggout" ]
+            , button [ onClick ClickDeleteUser ] [ text "Delete User" ]
+            ]
+        , div []
+            [ p [] [ a [ href "/home/" ] [ text "Home" ] ]
             ]
         ]
     
-viewUpdateUser : User -> Html Msg
-viewUpdateUser user =
+viewUpdateUser : User -> Maybe String -> Html Msg
+viewUpdateUser user infoMsg =
     div []
-        [ div []
+        [ viewInfoMsg infoMsg
+        , div []
             [ label [ for  "nome" ] [text "Nome:" ]
             , input [ id "nome"
                     , type_ "text"
@@ -171,10 +193,11 @@ viewUpdateUser user =
             ]
         ]
 
-viewUpdatePassword : PasswordInfo -> Html Msg
-viewUpdatePassword passwordInfo =
+viewUpdatePassword : PasswordInfo -> Maybe String -> Html Msg
+viewUpdatePassword passwordInfo infoMsg =
     div []
-        [ div []
+        [ viewInfoMsg infoMsg
+        ,div []
               [ div []
                     [ label [ for  "currentPassord" ] [text "Current Password:" ]
                     , input [ id "currentPassword"
@@ -211,13 +234,39 @@ viewError errorMessage =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        WebData result ->
+        WebUserData result ->
             case result of 
                 Ok user ->
-                    ( { model | user = (Just user), updatingUser = user }, Cmd.none )
+                    ( { model | user = (Just user)
+                      , updatingUser = user
+                      , state = Showing }, Cmd.none )
                     
                 Err httpError ->
                     ( { model | errorMsg = Just (buildErrorMsg httpError) }, Cmd.none )
+        WebUpdateUserData result ->
+            case result of 
+                Ok user ->
+                    ( { model | user = (Just user)
+                      , updatingUser = user
+                      , state = Showing
+                      , infoMsg = (Just "SUCESS: User updated")}, Cmd.none )
+                    
+                Err httpError ->
+                    ( { model | infoMsg = (Just "FAIL:  error in update user") }, Cmd.none )
+        WebPasswordData result ->
+            case result of 
+                Ok infoMsg ->
+                    ( { model | infoMsg = (Just "SUCESS: Password updated"), state = Showing }, Cmd.none )
+                    
+                Err httpError ->
+                    ( { model | infoMsg = Just ("FAIL: current password is wrong") }, Cmd.none )
+        WebDeleteUser result ->
+            case result of 
+                Ok infoMsg ->
+                    ( { model | infoMsg = (Just "SUCESS: User deleted sucessfully"), state = Showing }, Cmd.none )
+                    
+                Err httpError ->
+                    ( { model | infoMsg = Just ("FAIL: Fail to delete user") }, Cmd.none )
                     
         (SetNome nome) ->
             ( updateNome model nome, Cmd.none )
@@ -247,32 +296,59 @@ update msg model =
             ( { model | state = Showing }, Cmd.none )
 
         ClickSendUserUpdate ->
-            ( model, Cmd.none )
+            ( model, updateUserCmd model )
 
         ClickSendPasswordUpdate ->
+            ( model, updatePasswordCmd model )
+
+        Loggout ->
             ( model, Cmd.none )
+
+        ClickDeleteUser ->
+            ( model, deleteUserCmd model )
 
 init : Int -> ( Model, Cmd Msg )
 init userId =
     ( { user = Nothing
       , errorMsg = Nothing
+      , infoMsg = Nothing
       , state = Showing
       , updatingUser = emptyUser
       , userId = userId
       , passwordInfo = emptyPasswordInfo
       }
-    , getUser userId
+    , getUserCmd userId
     )
+
+deleteUserDecoder : Decoder String
+deleteUserDecoder =
+    Decode.field "message" Decode.string
+
+deleteUserUrl: Int ->  String
+deleteUserUrl userId =
+    "http://127.0.0.1:5000/api/user/" ++ (String.fromInt userId)
+
+deleteUserCmd : Model -> Cmd Msg
+deleteUserCmd model =
+    Http.request
+        { method = "DELETE"
+        , url = deleteUserUrl model.userId
+        , body = Http.emptyBody
+        , expect = Http.expectJson WebDeleteUser deleteUserDecoder
+        , headers = []
+        , timeout = Nothing
+        , tracker = Nothing
+        }
 
 userUrl: Int ->  String
 userUrl userId =
     "http://127.0.0.1:5000/api/user/" ++ (String.fromInt userId)
 
-getUser : Int -> Cmd Msg
-getUser userId =
+getUserCmd : Int -> Cmd Msg
+getUserCmd userId =
     Http.get
         { url = userUrl userId
-        , expect = Http.expectJson WebData userDecoder
+        , expect = Http.expectJson WebUserData userDecoder
         }
 
 userDecoder : Decoder User
@@ -282,3 +358,51 @@ userDecoder =
         ( Decode.field "nome" Decode.string )
         ( Decode.field "matricula" Decode.string )
         ( Decode.field "curso" Decode.string )
+
+userUpdateEncoder : User -> Encode.Value
+userUpdateEncoder user =
+    Encode.object
+        [ ("email", Encode.string user.email)
+        , ("nome", Encode.string user.nome)
+        , ("matricula", Encode.string user.matricula)
+        , ("curso", Encode.string user.curso)
+        ]
+
+updateUserCmd : Model -> Cmd Msg
+updateUserCmd model =
+    Http.request
+        { method = "PUT"
+        , url = userUrl model.userId
+        , body = Http.jsonBody (userUpdateEncoder model.updatingUser)
+        , expect = Http.expectJson WebUpdateUserData userDecoder
+        , headers = []
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+updatePasswordEncoder : PasswordInfo -> Encode.Value
+updatePasswordEncoder password =
+    Encode.object
+        [ ("current_password", Encode.string password.currentPassword)
+        , ("new_password", Encode.string password.newPassword)
+        ]
+
+updatePasswordUrl: Int ->  String
+updatePasswordUrl userId =
+    "http://127.0.0.1:5000/api/user/" ++ (String.fromInt userId) ++ "/password"
+
+updatePasswordDecoder : Decoder String
+updatePasswordDecoder =
+    Decode.field "message" Decode.string
+
+updatePasswordCmd : Model -> Cmd Msg
+updatePasswordCmd model =
+    Http.request
+        { method = "PUT"
+        , url = updatePasswordUrl model.userId
+        , body = Http.jsonBody (updatePasswordEncoder model.passwordInfo)
+        , expect = Http.expectJson WebPasswordData updatePasswordDecoder
+        , headers = []
+        , timeout = Nothing
+        , tracker = Nothing
+        }
