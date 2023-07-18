@@ -17,13 +17,20 @@ type Msg
     | WebRemoveAvaliacaoData ( Result Http.Error ( String ) )
     | Denuncia Int
     | RemoverAvaliacao Int
+    | EditarAvaliacao Int
     | SetComentario String
     | SetPontuacao String
+    | SetEditComentario String
+    | SetEditPontuacao String
     | ClickNewComentario
+    | ClickUpdateComentario Int
+    | CancelarUpdate
+
 
 type State
     = Showing
     | Loading
+    | Editing Int
     
 type alias Model =
     { turma : Turma
@@ -32,6 +39,7 @@ type alias Model =
     , errorMsg : Maybe String
     , state : State
     , newAvaliacao : NewAvaliacao
+    , editingAvaliacao : EditingAvaliacao
     }
 
 type alias Turma =
@@ -57,6 +65,21 @@ type alias NewAvaliacao =
     { userId : Int
     , comentario: String
     , pontuacao: Int
+    }
+
+type alias EditingAvaliacao =
+    { comentario: String
+    , pontuacao: Int
+    , userNome: String
+    }
+
+emptyAvaliacao : Avaliacao
+emptyAvaliacao =
+    { id = 0
+    , userId = 0
+    , userNome = ""
+    , comentario = ""
+    , pontuacao = 0
     }
 
 emptyTurma : Turma
@@ -90,7 +113,7 @@ viewTurma model =
         , h3 [] [ text ("Turma: " ++ model.turma.numero) ]
         , h3 [] [ text ("Nota: " ++ String.fromInt(model.turma.sumAvaliacoes // model.turma.qtdAvaliacoes)) ]
         , p [] [ text "Comentarios:" ]
-        , ul [] (List.map (viewAvaliacao model.userId) model.turma.avaliacoes )
+        , ul [] (List.map (viewAvaliacao model.userId model.state model.editingAvaliacao) model.turma.avaliacoes )
         , viewAddAvaliacao model.newAvaliacao
         ]
 
@@ -120,8 +143,19 @@ viewAddAvaliacao avaliacao =
             ]
         ]
 
-viewAvaliacao : Int -> Avaliacao -> Html Msg
-viewAvaliacao myId avaliacao =
+viewAvaliacao : Int -> State -> EditingAvaliacao -> Avaliacao -> Html Msg
+viewAvaliacao myId state edAvaliacao avaliacao =
+    case state of
+        (Editing avaliacaoId) ->
+            if avaliacao.id == avaliacaoId then
+                viewEditingAvaliacao avaliacao.id edAvaliacao
+            else
+               viewNormalAvaliacao myId avaliacao
+        (_) -> 
+            viewNormalAvaliacao myId avaliacao
+
+viewNormalAvaliacao : Int -> Avaliacao -> Html Msg
+viewNormalAvaliacao myId avaliacao =
     div []
         [ hr [] []
         , p [] [ text ("Username: " ++ avaliacao.userNome) ]
@@ -130,7 +164,38 @@ viewAvaliacao myId avaliacao =
         , button [ onClick (Denuncia avaliacao.id) ] [ text "Denuncia" ]
         , if (avaliacao.userId == myId) then
             button [ onClick (RemoverAvaliacao avaliacao.id) ] [ text "Apagar" ]
-          else div [] []
+        else div [] []
+        , if (avaliacao.userId == myId) then
+            button [ onClick (EditarAvaliacao avaliacao.id) ] [ text "Editar" ]
+        else div [] []
+        ]
+
+
+viewEditingAvaliacao : Int -> EditingAvaliacao -> Html Msg
+viewEditingAvaliacao avId avaliacao =
+    div []
+        [ hr [] []
+        , p [] [ text ("Username: " ++ avaliacao.userNome) ]
+        , div []
+            [ label [ for  "comentario" ] [text "Comentario:" ]
+            , input [ id "comentario"
+                    , type_ "text"
+                    , size 100
+                    , Html.Attributes.value avaliacao.comentario, onInput SetEditComentario ]
+                    []
+            ]
+        , div []
+            [ label [ for  "pontuacao" ] [text "Pontuacao:" ]
+            , input [ id "pontuacao"
+                    , type_ "number"
+                    , Html.Attributes.value (String.fromInt(avaliacao.pontuacao))
+                    , onInput SetEditPontuacao ]
+                    []
+            ]
+        , div []
+            [ button [ onClick (ClickUpdateComentario avId)] [ text "Update" ]
+            , button [ onClick CancelarUpdate ] [ text "Cancelar" ]
+            ]
         ]
 
 viewError : Model -> Html Msg
@@ -143,6 +208,16 @@ viewError model =
 
         Nothing ->
             div [] []
+
+updateEditComentario : EditingAvaliacao -> String -> EditingAvaliacao
+updateEditComentario avaliacao value =
+    { avaliacao | comentario = value }
+
+updateEditPontuacao : EditingAvaliacao -> String -> EditingAvaliacao
+updateEditPontuacao avaliacao value =
+    { avaliacao | pontuacao = ( String.toInt value
+                                              |> Maybe.withDefault 0
+                                              |> modBy 6)  }
 
 updateComentario : NewAvaliacao -> String -> NewAvaliacao
 updateComentario avaliacao value =
@@ -202,6 +277,12 @@ update msg model =
         ( SetPontuacao pontuacao ) ->
             ( { model | newAvaliacao = updatePontuacao model.newAvaliacao pontuacao }, Cmd.none )
 
+        ( SetEditComentario comentario ) ->
+            ( { model | editingAvaliacao = updateEditComentario model.editingAvaliacao comentario }, Cmd.none )
+
+        ( SetEditPontuacao comentario ) ->
+            ( { model | editingAvaliacao = updateEditPontuacao model.editingAvaliacao comentario }, Cmd.none )
+
 
         ( ClickNewComentario) ->
             (model, newAvaliacaoCmd model)
@@ -212,6 +293,31 @@ update msg model =
         ( RemoverAvaliacao avaliacaoId) ->
            ( model, removeAvaliacaoCmd avaliacaoId )
 
+        ( EditarAvaliacao avaliacaoId) ->
+           ( { model | state = (Editing avaliacaoId), editingAvaliacao = getEditAvaliacao avaliacaoId model.turma.avaliacoes }, Cmd.none )
+
+        CancelarUpdate  ->
+           ( { model | state = Showing}, Cmd.none )
+
+        ( ClickUpdateComentario id) ->
+            ( { model | state = Showing } , editComentarioCmd model id)
+
+toEdtingAvaliacao : Avaliacao -> EditingAvaliacao
+toEdtingAvaliacao avaliacao =
+    { comentario = avaliacao.comentario
+    , pontuacao = avaliacao.pontuacao
+    , userNome = avaliacao.userNome
+    }
+
+    
+getEditAvaliacao : Int -> (List Avaliacao) -> EditingAvaliacao
+getEditAvaliacao id avaliacoes =
+    List.filter (\a -> a.id==id) avaliacoes
+        |> List.head
+        |> Maybe.withDefault emptyAvaliacao
+        |> toEdtingAvaliacao
+        
+
 init : (Int, Int) -> ( Model, Cmd Msg )
 init (userId, turmaId) =
     ( { turma = emptyTurma
@@ -220,6 +326,7 @@ init (userId, turmaId) =
       , errorMsg = Nothing
       , state = Loading
       , newAvaliacao = { userId = userId, comentario = "", pontuacao = 0 }
+      , editingAvaliacao = { comentario = "", pontuacao = 0, userNome = "" }
       }
     , getTurma turmaId
     )
@@ -326,3 +433,27 @@ removeAvaliacaoCmd avaliacaoId =
 removeAvaliacaoDecoder: Decoder String
 removeAvaliacaoDecoder =
     (Decode.field "message" Decode.string)
+
+editAvaliacaoUrl : Int -> String
+editAvaliacaoUrl id =
+    "http://127.0.0.1:5000/api/avaliacao/" ++ String.fromInt(id)
+
+
+editAvaliacaoEncoder : EditingAvaliacao -> Encode.Value
+editAvaliacaoEncoder avaliacao =
+    Encode.object
+        [ ("comentario", Encode.string avaliacao.comentario)
+        , ("pontuacao", Encode.int avaliacao.pontuacao)
+        ]
+
+editComentarioCmd : Model -> Int -> Cmd Msg
+editComentarioCmd model id =
+    Http.request
+        { method = "PUT"
+        , url = editAvaliacaoUrl id
+        , body = Http.jsonBody (editAvaliacaoEncoder model.editingAvaliacao)
+        , expect = Http.expectJson WebRemoveAvaliacaoData removeAvaliacaoDecoder
+        , headers = []
+        , timeout = Nothing
+        , tracker = Nothing
+        }

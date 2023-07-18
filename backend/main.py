@@ -212,3 +212,28 @@ async def delete_avaliacao(
         raise HTTPException(status_code=400, detail="Fail to delete avaliacao")
 
     return {"message": "Avaliacao deleted sucessfully"}
+
+@app.put("/api/avaliacao/{avaliacao_id}")
+async def update_avaliacao(
+        conn: Connection,
+        avaliacao_id: int,
+        update_avaliacao_in: models.UpdateAvaliacaoIn,
+    ) -> dict[str, str]:
+    ok = await models.update_avaliacao(conn, avaliacao_id, update_avaliacao_in)
+
+    if not ok:
+        raise HTTPException(status_code=400, detail="Fail to udpate avaliacao")
+
+    return {"message": "Avaliacao update sucessfully"}
+
+@app.delete("/api/avaliacao/userban/{avaliacao_id}")
+async def ban_user(
+        conn: Connection,
+        avaliacao_id: int
+    ) -> dict[str, str]:
+    ok = await models.ban_user(conn, avaliacao_id)
+
+    if not ok:
+        raise HTTPException(status_code=400, detail="Fail to ban user")
+
+    return {"message": "User ban sucessfully sucessfully"}

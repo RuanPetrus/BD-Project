@@ -9,6 +9,10 @@ class AvaliacaoIn(BaseModel):
     comentario: str
     pontuacao: int
 
+class UpdateAvaliacaoIn(BaseModel):
+    comentario: str
+    pontuacao: int
+
 class UserLogginIn(BaseModel):
     email: str
     password: str
@@ -493,6 +497,41 @@ async def delete_avaliacao(
              WHERE id=%s
              RETURNING id
         """, ( avaliacao_id,)
+        )
+        res = await curr.fetchone()
+        if res is None:
+            return False
+        return True
+
+async def ban_user(
+        conn: psycopg.AsyncConnection,
+        avaliacao_id: int
+) -> bool:
+    async with conn.cursor() as curr:
+        await curr.execute("""
+             DELETE
+             FROM Users
+             WHERE id=(SELECT user_id FROM Avaliacoes WHERE id=%s)
+             RETURNING id
+        """, ( avaliacao_id,)
+        )
+        res = await curr.fetchone()
+        if res is None:
+            return False
+        return True
+
+async def update_avaliacao(
+        conn: psycopg.AsyncConnection,
+        avaliacao_id: int,
+        update_avaliacao: UpdateAvaliacaoIn,
+) -> bool:
+    async with conn.cursor() as curr:
+        await curr.execute("""
+            UPDATE Avaliacoes SET (comentario, pontuacao)
+                = (%s, %s)
+            WHERE id=%s
+            RETURNING id
+        """, ( update_avaliacao.comentario, update_avaliacao.pontuacao, avaliacao_id)
         )
         res = await curr.fetchone()
         if res is None:

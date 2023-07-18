@@ -16,6 +16,7 @@ type Msg
     | WebRemoveDenunciaData ( Result Http.Error ( String ) )
     | RemoverAvaliacao Int Int
     | RemoverDenuncia Int
+    | BanirUsuario Int
 
 type State
     = Showing
@@ -65,6 +66,7 @@ viewDenuncia denuncia =
         [ hr [] []
         , p [] [ text ("Comentario: " ++ denuncia.comentario) ]
         , button [onClick (RemoverAvaliacao denuncia.avaliacaoId denuncia.id) ] [ text ("Remover Comentario") ]
+        , button [onClick (BanirUsuario denuncia.avaliacaoId) ] [ text ("Banir Usuario") ]
         , button [onClick (RemoverDenuncia denuncia.id) ] [ text ("Manter comentario") ]
         ]
 
@@ -104,6 +106,9 @@ update msg model =
         ( RemoverDenuncia denunciaId ) ->
            ( model, removeDenunciaCmd denunciaId )
 
+        ( BanirUsuario avaliacaoId ) ->
+           ( model, banirUsuarioCmd avaliacaoId )
+
 
 
 init : ( Model, Cmd Msg )
@@ -136,7 +141,7 @@ denunciaDecoder =
 removeAvaliacaoUrl : Int -> String
 removeAvaliacaoUrl id =
     "http://127.0.0.1:5000/api/avaliacao/" ++ String.fromInt(id)
-                     
+
 
 removeAvaliacaoCmd : Int -> Cmd Msg
 removeAvaliacaoCmd avaliacaoId =
@@ -174,3 +179,20 @@ removeDenunciaCmd denunciaId =
 removeDenunciaDecoder: Decoder String
 removeDenunciaDecoder =
     (Decode.field "message" Decode.string)
+
+
+banirUsuarioUrl : Int -> String
+banirUsuarioUrl id =
+    "http://127.0.0.1:5000/api/avaliacao/userban/" ++ String.fromInt(id)
+                     
+banirUsuarioCmd: Int -> Cmd Msg
+banirUsuarioCmd avaliacaoId =
+    Http.request
+        { method = "DELETE"
+        , url = banirUsuarioUrl  avaliacaoId
+        , body = Http.emptyBody
+        , expect = Http.expectJson WebRemoveAvaliacaoData removeAvaliacaoDecoder
+        , headers = []
+        , timeout = Nothing
+        , tracker = Nothing
+        }

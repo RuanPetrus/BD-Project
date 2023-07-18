@@ -12,3 +12,7 @@ __pycache__/
 *elm-stuff
 # elm-repl generated files
 repl-temp-*
+
+node_modules
+package-lock.json
+package.json
